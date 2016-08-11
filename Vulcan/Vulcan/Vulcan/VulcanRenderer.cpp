@@ -1,22 +1,26 @@
 #include "VulcanRenderer.h"
 #include "Shared.h"
+#include "Window.h"
 
 #include <cstdlib>
-#include <assert.h>
 #include <iostream>
 
 VulcanRenderer::VulcanRenderer() {
+	setupLayersAndExtensions();
 	setupDebug();
 	initVulcanInstance();
 	initDebug();
 	initDevice();
 }
 
-
 VulcanRenderer::~VulcanRenderer() {
 	deinitDevice();
 	deinitDebug();
 	deinitVulcanInstance();
+	if(_window != nullptr) {
+		delete(_window);
+		_window = nullptr;
+	}
 }
 
 void VulcanRenderer::initVulcanInstance() {
@@ -37,6 +41,12 @@ void VulcanRenderer::initVulcanInstance() {
 	instanceCreateInfo.pNext = &debugCallbackCreateInfo;
 
 	ErrorCheck(vkCreateInstance(&instanceCreateInfo, nullptr, &_instance));
+}
+
+void VulcanRenderer::setupLayersAndExtensions() {
+	_instanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+	_instanceExtensions.push_back("VK_KHR_win32_surface");
+	//_instanceExtensions.push_back(VK_KHR_DISPLAY_EXTENSION_NAME);
 }
 
 void VulcanRenderer::initDevice() {
@@ -122,6 +132,8 @@ void VulcanRenderer::initDevice() {
 
 	ErrorCheck(vkCreateDevice(_gpuHandler, &deviceCreateInfo, nullptr, &_deviceHandler));
 
+	vkGetDeviceQueue(_deviceHandler, _graphicFamilyIndex, 0, &_queue);
+
 }
 
 void VulcanRenderer::deinitDevice() {
@@ -151,13 +163,16 @@ DebugCallback( VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectTyp
 	}
 	std::cout << "[" << layerPrefix << "]: ";
 	std::cout << msg << std::endl;
+	if(flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) {
+		assert(0 && "VULCAN ERROR");
+	}
 	return false;
 }
 
 void VulcanRenderer::setupDebug() {
 	debugCallbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
 	debugCallbackCreateInfo.pfnCallback = DebugCallback;
-	debugCallbackCreateInfo.flags =// VK_DEBUG_REPORT_INFORMATION_BIT_EXT |
+	debugCallbackCreateInfo.flags = //VK_DEBUG_REPORT_INFORMATION_BIT_EXT |
 									VK_DEBUG_REPORT_WARNING_BIT_EXT |
 									VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
 									VK_DEBUG_REPORT_ERROR_BIT_EXT |
@@ -186,7 +201,48 @@ void VulcanRenderer::initDebug() {
 
 void VulcanRenderer::deinitDebug() {
 	fvkDestroyDebugReportCallbackEXT(_instance, _debugReportHandler, nullptr);
-	_debugReportHandler = nullptr;
+	_debugReportHandler = VK_NULL_HANDLE;
+}
+
+void VulcanRenderer::initSurface() {}
+
+void VulcanRenderer::deinitSurface() {}
+
+void VulcanRenderer::OpenWindow(uint32_t sizeX, uint32_t sizeY, const char * name) {
+	_window = new Window(this, sizeX, sizeY, name);
+}
+
+bool VulcanRenderer::Run() {
+	if(_window != nullptr) {
+		_window->UpdateWindow();
+		return _window->isOpened();
+	}
+	
+	return true;
+}
+
+const VkInstance VulcanRenderer::GetVulcanInstance() const {
+	return _instance;
+}
+
+const VkPhysicalDevice VulcanRenderer::GetVulcanPhysicalDevice() const {
+	return _gpuHandler;
+}
+
+const VkDevice VulcanRenderer::GetVulcanDevice() const {
+	return _deviceHandler;
+}
+
+const VkQueue VulcanRenderer::GetVulcanQueue() const {
+	return _queue;
+}
+
+const uint32_t VulcanRenderer::GetVulcanGraphicsQueueFamilyIndex() const {
+	return _graphicFamilyIndex;
+}
+
+const VkPhysicalDeviceProperties & VulcanRenderer::GetVulcanPhysicalDeviceProperties() const {
+	return _gpuProperties;
 }
 
 void VulcanRenderer::deinitVulcanInstance() {
