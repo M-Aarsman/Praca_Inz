@@ -16,6 +16,8 @@ private:
 	void initOSWindow();
 	void initVulcanSurface();
 	void deinitVulcanSurface();
+	void initSwapchain();
+	void deinitSwapchain();
 
 private:
 	VulcanRenderer* _renderer = nullptr;
@@ -28,9 +30,17 @@ private:
 	
 	uint32_t _sizeX = 0;
 	uint32_t _sizeY = 0;
+	uint32_t _surfaceSizeX = 0;
+	uint32_t _surfaceSizeY = 0;
+	uint32_t _swapchainImageCount = 2;
+
 	const char* _winTitle;
 
 	VkSurfaceKHR _surface = VK_NULL_HANDLE;
+	VkSwapchainKHR _swapchain = VK_NULL_HANDLE;
+
+	VkSurfaceCapabilitiesKHR _surfaceCapabilitesKHR = {};
+	VkSurfaceFormatKHR _surfaceFormat = {};
 
 };
 

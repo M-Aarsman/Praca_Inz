@@ -47,6 +47,9 @@ void VulcanRenderer::setupLayersAndExtensions() {
 	_instanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 	_instanceExtensions.push_back("VK_KHR_win32_surface");
 	//_instanceExtensions.push_back(VK_KHR_DISPLAY_EXTENSION_NAME);
+
+	_deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
 }
 
 void VulcanRenderer::initDevice() {
@@ -129,6 +132,8 @@ void VulcanRenderer::initDevice() {
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceCreateInfo.queueCreateInfoCount = 1;
 	deviceCreateInfo.pQueueCreateInfos = &deviceQueueCreateInfo;
+	deviceCreateInfo.enabledExtensionCount = _deviceExtensions.size();
+	deviceCreateInfo.ppEnabledExtensionNames = _deviceExtensions.data();
 
 	ErrorCheck(vkCreateDevice(_gpuHandler, &deviceCreateInfo, nullptr, &_deviceHandler));
 

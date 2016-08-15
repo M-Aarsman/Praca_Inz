@@ -1,4 +1,3 @@
-#include "Shared.h"
 #include "Window.h"
 #include "VulcanRenderer.h"
 
@@ -27,18 +26,20 @@ Window::Window(VulcanRenderer* renderer, uint32_t sizeX, uint32_t sizeY, const c
 	_renderer = renderer;
 	_win32ClassName = "ApiWindow";
 	_win32Instance = GetModuleHandle(nullptr);
-	_sizeX = sizeX;
-	_sizeY = sizeY;
+	_sizeX = _surfaceSizeX = sizeX;
+	_sizeY = _surfaceSizeY =sizeY;
 	_winTitle = name;
 
 	initOSWindow();
 	initVulcanSurface();
+	initSwapchain();
 	_opened = true;
 	
 }
 
 void Window::Close() {
 	if(_opened) {
+		deinitSwapchain();
 		deinitVulcanSurface();
 		DestroyWindow(_win32Window);
 		UnregisterClass(_win32ClassName, _win32Instance);
@@ -120,13 +121,89 @@ void Window::initVulcanSurface() {
 	surfaceCreateInfo.hinstance = _win32Instance;
 	surfaceCreateInfo.hwnd = _win32Window;
 
-	vkCreateWin32SurfaceKHR(_renderer->GetVulcanInstance(), &surfaceCreateInfo, nullptr, &_surface);
-
+	ErrorCheck(vkCreateWin32SurfaceKHR(_renderer->GetVulcanInstance(), &surfaceCreateInfo, nullptr, &_surface));
+	
+	VkBool32 WSI_supported = false;
+	vkGetPhysicalDeviceSurfaceSupportKHR(_renderer->GetVulcanPhysicalDevice(), _renderer->GetVulcanGraphicsQueueFamilyIndex(), _surface, &WSI_supported); // witout that check it will crash (???WTF)
+	if(!WSI_supported) {
+		assert(0 && "WSI not supported");
+		std::exit(-1);
+	}
+	
 	//query surface
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_renderer->GetVulcanPhysicalDevice(), _surface, &_surfaceCapabilitesKHR);
+	if(_surfaceCapabilitesKHR.currentExtent.width < UINT32_MAX) {
+		_surfaceSizeX = _surfaceCapabilitesKHR.currentExtent.width;
+		_surfaceSizeY = _surfaceCapabilitesKHR.currentExtent.height;
+	}
+
+	{
+		uint32_t formatCount = 0;
+		vkGetPhysicalDeviceSurfaceFormatsKHR(_renderer->GetVulcanPhysicalDevice(), _surface, &formatCount,nullptr);
+		assert(formatCount > 0, "formatCount < 0 !");
+		std::vector<VkSurfaceFormatKHR> formats(formatCount);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(_renderer->GetVulcanPhysicalDevice(), _surface, &formatCount, formats.data());
+
+		if(formats [0].format == VK_FORMAT_UNDEFINED) {
+			_surfaceFormat.format = VK_FORMAT_B8G8R8A8_UNORM;
+			_surfaceFormat.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+		} 
+		else {
+			_surfaceFormat = formats [0];
+		}
+	}
 }
 
 void Window::deinitVulcanSurface() {
 	vkDestroySurfaceKHR(_renderer->GetVulcanInstance(), _surface, nullptr);
+}
+
+void Window::initSwapchain() {
+
+	if(_swapchainImageCount > _surfaceCapabilitesKHR.maxImageCount) _swapchainImageCount = _surfaceCapabilitesKHR.maxImageCount;
+	if(_swapchainImageCount < _surfaceCapabilitesKHR.minImageCount + 1) _swapchainImageCount = _surfaceCapabilitesKHR.minImageCount + 1;
+
+	VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+	{
+		uint32_t presentModeCount = 0;
+		vkGetPhysicalDeviceSurfacePresentModesKHR(_renderer->GetVulcanPhysicalDevice(), _surface, &presentModeCount, nullptr);
+		std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(_renderer->GetVulcanPhysicalDevice(), _surface, &presentModeCount, presentModes.data());
+
+		for(auto mode : presentModes) {
+			if(mode == VK_PRESENT_MODE_MAILBOX_KHR) {
+				presentMode = mode;
+				break;
+			}
+		}
+	}
+
+	VkSwapchainCreateInfoKHR swapchainCreateInfo {};
+	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	swapchainCreateInfo.surface = _surface;
+	swapchainCreateInfo.minImageCount = _swapchainImageCount;
+	swapchainCreateInfo.imageFormat = _surfaceFormat.format;
+	swapchainCreateInfo.imageColorSpace = _surfaceFormat.colorSpace;
+	swapchainCreateInfo.imageExtent.width = _surfaceSizeX;
+	swapchainCreateInfo.imageExtent.height = _surfaceSizeY;
+	swapchainCreateInfo.imageArrayLayers = 1;
+	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	swapchainCreateInfo.queueFamilyIndexCount = 0;			//ignored when VK_SHARING_MODE_EXCLUSIVE
+	swapchainCreateInfo.pQueueFamilyIndices = nullptr;		//ignored when VK_SHARING_MODE_EXCLUSIVE
+	swapchainCreateInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	swapchainCreateInfo.presentMode = presentMode;
+	swapchainCreateInfo.clipped = VK_TRUE;
+	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE; //future consider set it to resize window
+
+	ErrorCheck(vkCreateSwapchainKHR(_renderer->GetVulcanDevice(), &swapchainCreateInfo, nullptr, &_swapchain));
+
+	ErrorCheck(vkGetSwapchainImagesKHR(_renderer->GetVulcanDevice(), _swapchain, &_swapchainImageCount, nullptr));
+}
+
+void Window::deinitSwapchain() {
+	vkDestroySwapchainKHR(_renderer->GetVulcanDevice(), _swapchain, nullptr);
 }
 
 Window::~Window() {

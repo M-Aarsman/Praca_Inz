@@ -46,6 +46,8 @@ private:
 	std::vector<const char*> _instanceLayers;
 	std::vector<const char*> _instanceExtensions;
 
+	std::vector<const char*> _deviceExtensions;
+
 	VkDebugReportCallbackEXT _debugReportHandler = VK_NULL_HANDLE;
 	VkDebugReportCallbackCreateInfoEXT debugCallbackCreateInfo {};
 
