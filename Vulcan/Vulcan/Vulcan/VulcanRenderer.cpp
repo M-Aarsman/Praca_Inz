@@ -1,5 +1,4 @@
 #include "VulcanRenderer.h"
-#include "Shared.h"
 #include "Window.h"
 
 #include <cstdlib>
@@ -11,9 +10,14 @@ VulcanRenderer::VulcanRenderer() {
 	initVulcanInstance();
 	initDebug();
 	initDevice();
+	initCommandPool();
+	initCommandBuffer();
+	//ExecuteBeginCommandBuffer();
 }
 
 VulcanRenderer::~VulcanRenderer() {
+	deinitCommandBuffer();
+	deinitCommandPool();
 	deinitDevice();
 	deinitDebug();
 	deinitVulcanInstance();
@@ -27,7 +31,7 @@ void VulcanRenderer::initVulcanInstance() {
 	VkApplicationInfo applicationInfo {};
 	applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	applicationInfo.apiVersion = VK_MAKE_VERSION(1, 0, 3);
-	applicationInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
+	applicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 	applicationInfo.pApplicationName = "App 1";
 
 
@@ -45,11 +49,38 @@ void VulcanRenderer::initVulcanInstance() {
 
 void VulcanRenderer::setupLayersAndExtensions() {
 	_instanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-	_instanceExtensions.push_back("VK_KHR_win32_surface");
-	//_instanceExtensions.push_back(VK_KHR_DISPLAY_EXTENSION_NAME);
+	_instanceExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 
 	_deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
+}
+
+void VulcanRenderer::initCommandPool() {
+	VkCommandPoolCreateInfo commandPoolCreateInfo {};
+	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	commandPoolCreateInfo.pNext = NULL;
+	commandPoolCreateInfo.queueFamilyIndex = _graphicFamilyIndex;
+	commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+	ErrorCheck(vkCreateCommandPool(_deviceHandler, &commandPoolCreateInfo, nullptr, &_commandPool));
+}
+
+void VulcanRenderer::deinitCommandPool() {
+	vkDestroyCommandPool(_deviceHandler, _commandPool, nullptr);
+}
+
+void VulcanRenderer::initCommandBuffer() {
+	VkCommandBufferAllocateInfo commandBufferAllocateInfo {};
+	commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	commandBufferAllocateInfo.commandPool = _commandPool;
+	commandBufferAllocateInfo.commandBufferCount = 1;
+	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+	ErrorCheck(vkAllocateCommandBuffers(_deviceHandler, &commandBufferAllocateInfo, &_commandBuffer));
+}
+
+void VulcanRenderer::deinitCommandBuffer() {
+	vkFreeCommandBuffers(_deviceHandler, _commandPool, 1, &_commandBuffer);
 }
 
 void VulcanRenderer::initDevice() {
@@ -86,6 +117,8 @@ void VulcanRenderer::initDevice() {
 			std::exit(-2);
 		}
 	}
+
+	vkGetPhysicalDeviceMemoryProperties(_gpuHandler, &_memoryProperties);
 	//enumerate dubug instance layers
 	{
 		uint32_t layerCount = 0;
@@ -136,8 +169,6 @@ void VulcanRenderer::initDevice() {
 	deviceCreateInfo.ppEnabledExtensionNames = _deviceExtensions.data();
 
 	ErrorCheck(vkCreateDevice(_gpuHandler, &deviceCreateInfo, nullptr, &_deviceHandler));
-
-	vkGetDeviceQueue(_deviceHandler, _graphicFamilyIndex, 0, &_queue);
 
 }
 
@@ -217,6 +248,37 @@ void VulcanRenderer::OpenWindow(uint32_t sizeX, uint32_t sizeY, const char * nam
 	_window = new Window(this, sizeX, sizeY, name);
 }
 
+void VulcanRenderer::ExecuteBeginCommandBuffer() {
+	VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	ErrorCheck(vkBeginCommandBuffer(_commandBuffer, &commandBufferBeginInfo));
+}
+
+void VulcanRenderer::ExecuteQueueCommandBuffer() {
+	const VkCommandBuffer cmd_bufs [] = { _commandBuffer};
+	VkFenceCreateInfo fenceInfo  {};
+	VkFence drawFence;
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	vkCreateFence(_deviceHandler, &fenceInfo, nullptr, &drawFence);
+
+	VkPipelineStageFlags pipe_stage_flags = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	VkSubmitInfo submitInfo [1] = {};
+	submitInfo [0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo [0].pWaitDstStageMask = &pipe_stage_flags;
+	submitInfo [0].commandBufferCount = 1;
+	submitInfo [0].pCommandBuffers = cmd_bufs;
+
+	ErrorCheck(vkQueueSubmit(_queue, 1, submitInfo, drawFence));
+
+	VkResult result = VK_SUCCESS;
+	do {
+		result = vkWaitForFences(_deviceHandler, 1, &drawFence, VK_TRUE, UINT64_MAX);
+	} while(result == VK_TIMEOUT);
+
+	vkDestroyFence(_deviceHandler, drawFence, nullptr);
+}
+
 bool VulcanRenderer::Run() {
 	if(_window != nullptr) {
 		_window->UpdateWindow();
@@ -224,6 +286,10 @@ bool VulcanRenderer::Run() {
 	}
 	
 	return true;
+}
+
+void VulcanRenderer::InitDeviceQueue() {
+	vkGetDeviceQueue(_deviceHandler, _graphicFamilyIndex, 0, &_queue);
 }
 
 const VkInstance VulcanRenderer::GetVulcanInstance() const {
@@ -248,6 +314,22 @@ const uint32_t VulcanRenderer::GetVulcanGraphicsQueueFamilyIndex() const {
 
 const VkPhysicalDeviceProperties & VulcanRenderer::GetVulcanPhysicalDeviceProperties() const {
 	return _gpuProperties;
+}
+
+const VkPhysicalDeviceMemoryProperties & VulcanRenderer::GetVulcanPhysicalDeviceMemoryProperties() const {
+	return _memoryProperties;
+}
+
+const VkCommandPool VulcanRenderer::GetVulcanCommandPool() const {
+	return _commandPool;
+}
+
+const VkCommandBuffer VulcanRenderer::GetVulcanCommandBuffer() const {
+	return _commandBuffer;
+}
+
+Window * VulcanRenderer::GetWindow() const {
+	return _window;
 }
 
 void VulcanRenderer::deinitVulcanInstance() {

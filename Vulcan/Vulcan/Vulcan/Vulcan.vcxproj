@@ -69,29 +69,31 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\VulkanSDK\1.0.17.0\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\VulkanSDK\1.0.17.0\Bin32;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\VulkanSDK\1.0.17.0\glslang\build\SPIRV\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\glslang\Debug;C:\VulkanSDK\1.0.17.0\Bin;C:\VulkanSDK\1.0.17.0\glslang\build\OGLCompilersDLL\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\StandAlone\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\glslang\OSDependent\Windows\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\hlsl\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\VulkanSDK\1.0.17.0\Include;C:\VulkanSDK\1.0.17.0\glm-0.9.7.6\glm;C:\VulkanSDK\1.0.17.0\glslang;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>C:\VulkanSDK\1.0.17.0\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\VulkanSDK\1.0.17.0\Bin32;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\VulkanSDK\1.0.17.0\glslang\build\x64\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\x64\Release;C:\VulkanSDK\1.0.17.0\Bin;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\VulkanSDK\1.0.17.0\glm-0.9.7.6\glm;C:\VulkanSDK\1.0.17.0\glslang;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\VulkanSDK\1.0.17.0\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\VulkanSDK\1.0.17.0\Bin;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\VulkanSDK\1.0.17.0\glslang\build\SPIRV\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\glslang\Debug;C:\VulkanSDK\1.0.17.0\Bin;C:\VulkanSDK\1.0.17.0\glslang\build\OGLCompilersDLL\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\StandAlone\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\glslang\OSDependent\Windows\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\hlsl\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\VulkanSDK\1.0.17.0\Include;C:\VulkanSDK\1.0.17.0\glm-0.9.7.6\glm;C:\VulkanSDK\1.0.17.0\glslang;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\VulkanSDK\1.0.17.0\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\VulkanSDK\1.0.17.0\Bin;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\VulkanSDK\1.0.17.0\glslang\build\x64\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\x64\Release;C:\VulkanSDK\1.0.17.0\Bin;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\VulkanSDK\1.0.17.0\glm-0.9.7.6\glm;C:\VulkanSDK\1.0.17.0\glslang;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.0.17.0\glm-0.9.7.6\glm\glm;C:\VulkanSDK\1.0.17.0\glslang\glslang;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;glslang.lib;SPIRV.lib;HLSL.lib;OGLCompiler.lib;glslang-default-resource-limits.lib;OSDependent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.0.17.0\glslang\build\glslang\OSDependent\Windows\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\StandAlone\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\hlsl\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\OGLCompilersDLL\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\SPIRV\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\glslang\Debug;C:\VulkanSDK\1.0.17.0\glm-0.9.7.6\glm\glm;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -99,9 +101,11 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.0.17.0\glm-0.9.7.6\glm\glm;C:\VulkanSDK\1.0.17.0\glslang\glslang;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;glslang.lib;SPIRV.lib;HLSL.lib;OGLCompiler.lib;glslang-default-resource-limits.lib;OSDependent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.0.17.0\glslang\build\glslang\OSDependent\Windows\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\StandAlone\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\hlsl\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\OGLCompilersDLL\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\SPIRV\Debug;C:\VulkanSDK\1.0.17.0\glslang\build\glslang\Debug;C:\VulkanSDK\1.0.17.0\glm-0.9.7.6\glm\glm;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -111,11 +115,13 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.0.17.0\glm-0.9.7.6\glm\glm;C:\VulkanSDK\1.0.17.0\glslang\glslang;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.0.17.0\glm-0.9.7.6\glm\glm;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -125,11 +131,13 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.0.17.0\glm-0.9.7.6\glm\glm;C:\VulkanSDK\1.0.17.0\glslang\glslang;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.0.17.0\glm-0.9.7.6\glm\glm;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -139,6 +147,7 @@
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Shaders.h" />
     <ClInclude Include="Shared.h" />
     <ClInclude Include="VulcanRenderer.h" />
     <ClInclude Include="Window.h" />

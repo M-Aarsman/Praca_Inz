@@ -1,6 +1,7 @@
 #pragma once
 
-#include <vulkan\vulkan.h>
+#include "Shared.h"
+
 #include <vector>
 #include <stdint.h>
 #include <Windows.h>
@@ -13,7 +14,10 @@ public:
 	VulcanRenderer();
 	~VulcanRenderer();
 	void OpenWindow(uint32_t sizeX, uint32_t sizeY, const char* name);
+	void ExecuteBeginCommandBuffer();
+	void ExecuteQueueCommandBuffer();
 	bool Run();
+	void InitDeviceQueue();
 	
 	//Getters
 	const VkInstance GetVulcanInstance() const;
@@ -22,6 +26,10 @@ public:
 	const VkQueue GetVulcanQueue() const;
 	const uint32_t GetVulcanGraphicsQueueFamilyIndex() const;
 	const VkPhysicalDeviceProperties& GetVulcanPhysicalDeviceProperties() const;
+	const VkPhysicalDeviceMemoryProperties& GetVulcanPhysicalDeviceMemoryProperties() const;
+	const VkCommandPool GetVulcanCommandPool() const;
+	const VkCommandBuffer GetVulcanCommandBuffer() const;
+	Window* GetWindow() const;
 
 private:
 	void initVulcanInstance();
@@ -34,6 +42,10 @@ private:
 	void initSurface();
 	void deinitSurface();
 	void setupLayersAndExtensions();
+	void initCommandPool();
+	void deinitCommandPool();
+	void initCommandBuffer();
+	void deinitCommandBuffer();
 
 private:
 	VkInstance _instance = VK_NULL_HANDLE;
@@ -50,6 +62,9 @@ private:
 
 	VkDebugReportCallbackEXT _debugReportHandler = VK_NULL_HANDLE;
 	VkDebugReportCallbackCreateInfoEXT debugCallbackCreateInfo {};
+	VkPhysicalDeviceMemoryProperties _memoryProperties;
+	VkCommandPool _commandPool;
+	VkCommandBuffer _commandBuffer;
 
 	Window* _window = nullptr;
 	HINSTANCE _windowInstance = nullptr;
