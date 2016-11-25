@@ -1,23 +1,28 @@
 #pragma once
 
 #include "Shared.h"
+#include "Mesh.h"
 
 #include <vector>
 #include <stdint.h>
 #include <Windows.h>
+#include <time.h>
 
 class Window;
 
-class VulcanRenderer
+class VulkanRenderer
 {
 public:
-	VulcanRenderer();
-	~VulcanRenderer();
+	VulkanRenderer(unsigned int meshNum);
+	~VulkanRenderer();
 	void OpenWindow(uint32_t sizeX, uint32_t sizeY, const char* name);
 	void ExecuteBeginCommandBuffer();
 	void ExecuteQueueCommandBuffer();
-	bool Run();
+	bool Run(uint32_t &imageKHRindex);
 	void InitDeviceQueue();
+	void InitSemaphore(VkSemaphore* semaphore, uint32_t &imageKHRindex);
+	void InitVertexBuffer();
+	void DeinitVertexBuffer();
 	
 	//Getters
 	const VkInstance GetVulcanInstance() const;
@@ -30,6 +35,8 @@ public:
 	const VkCommandPool GetVulcanCommandPool() const;
 	const VkCommandBuffer GetVulcanCommandBuffer() const;
 	Window* GetWindow() const;
+	const VkBuffer* GetVertexBuffer();
+	void Draw(uint32_t &imageKHRindex, VkSemaphore* semaphore);
 
 private:
 	void initVulcanInstance();
@@ -46,6 +53,11 @@ private:
 	void deinitCommandPool();
 	void initCommandBuffer();
 	void deinitCommandBuffer();
+
+	void set_image_layout(VkImage& image, VkImageAspectFlags aspectMask, VkImageLayout old_image_layout,
+						  VkImageLayout new_image_layout);
+
+	void loadVertx(char* fileName);
 
 private:
 	VkInstance _instance = VK_NULL_HANDLE;
@@ -72,5 +84,20 @@ private:
 	uint32_t _winWidth = 0;
 	uint32_t _winHeight = 0;
 	char* _winTitle = "";
+
+	clock_t begin = 0;
+
+	VkBuffer _vertexBuffer = VK_NULL_HANDLE;
+	VkDeviceMemory _vertexBufferMemory = VK_NULL_HANDLE;
+	VkFence _drawFence = VK_NULL_HANDLE;
+
+	VkMemoryRequirements _memoryReqs;
+
+	std::vector<Vertex> vertices;
+	
+	std::vector<Mesh*> meshes;
+
+	unsigned int _vertexPerMesh = 0;
+	unsigned int _meshNum;
 };
 
