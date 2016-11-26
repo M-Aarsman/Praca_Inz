@@ -36,6 +36,7 @@ int Win32Application::Run(Dx12Renderer * renderer, HINSTANCE hInstance, int nCmd
 
 	renderer->SetWindowHeight(_height);
 	renderer->SetWindowWidth(_width);
+	renderer->SetHWND(_hwnd);
 	renderer->OnInit();
 
 	ShowWindow(_hwnd, nCmdShow);

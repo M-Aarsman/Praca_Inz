@@ -114,6 +114,7 @@ private:
 	HANDLE _swapChainEvent;
 
 	std::vector<Vertex> _meshesVertices;
+	std::vector<unsigned short> _cubeIndices;
 
 	std::vector<Mesh*> _meshes;
 

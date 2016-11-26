@@ -139,6 +139,14 @@ void Dx12Renderer::CameraUpdate() {
 	XMStoreFloat4x4(&_constantBufferData.view, DirectX::XMMatrixTranspose(DirectX::XMMatrixLookAtRH(eye, at, up)));
 }
 
+void Dx12Renderer::ZoomIn(float n) {
+	_cameraPositionX += n;
+}
+
+void Dx12Renderer::ZoomOut(float n) {
+	_cameraPositionX -= n;
+}
+
 void Dx12Renderer::LoadPipeline() {
 	HRESULT result = S_OK;
 
@@ -338,41 +346,19 @@ void Dx12Renderer::LoadAssets() {
 		exit(-1);
 	}
 
-	//load vertices an indicate
-
-	// Load mesh indices. Each trio of indices represents a triangle to be rendered on the screen.
-	// For example: 0,2,1 means that the vertices with indexes 0, 2 and 1 from the vertex buffer compose the
-	// first triangle of this mesh.
-	unsigned short ____cubeIndices [] =  //TODO figured it out
-	{
-		0, 2, 1, // -x
-		1, 2, 3,
-
-		4, 5, 6, // +x
-		5, 7, 6,
-
-		0, 1, 5, // -y
-		0, 5, 4,
-
-		2, 6, 7, // +y
-		2, 7, 3,
-
-		0, 4, 6, // -z
-		0, 6, 2,
-
-		1, 3, 7, // +z
-		1, 7, 5,
-	};
-
-	loadVertices("cubeVertex.txt");
+	loadVertices("cubeVertices.txt");
+	
 	_meshes.push_back(new Mesh(&_meshesVertices, 0, _meshesVertices.size()));
-	int begin = _meshesVertices.size();
+	int begin = 0;
 	_vertexPerMesh = _meshesVertices.size();
 	int end = begin + _vertexPerMesh;
 
+	int indicesPerMesh = _cubeIndices.size();
+
 	// I want to put mesh togeter in some kind of square
 
-	unsigned int meshPerRow = (unsigned int) (sqrt(_meshNum));
+	unsigned int rowNum = (unsigned int) (sqrt(_meshNum));
+	unsigned int meshPerRow = _meshNum / rowNum;
 
 	unsigned int centerIndex = meshPerRow / 2; // the cube index (i,j) which will be around 0,0
 
@@ -381,6 +367,12 @@ void Dx12Renderer::LoadAssets() {
 
 	for(size_t i = 0; i < _vertexPerMesh * (_meshNum - 1); i++) {
 		_meshesVertices.push_back(_meshesVertices [i % _vertexPerMesh]);
+	}
+
+	for(size_t i = 0; i < _meshNum - 1; i++) {
+		for(size_t j = 0; j < indicesPerMesh; j++) {
+			_cubeIndices.push_back(_cubeIndices [j] + ((i+1) * _vertexPerMesh));
+		}
 	}
 
 	//TODO: !!! calculate object width + object height
@@ -397,7 +389,7 @@ void Dx12Renderer::LoadAssets() {
 
 	// and now translate it...
 
-	for(int i = 0; i < meshPerRow; i++) {  // +/- flip
+	for(int i = 0; i < rowNum; i++) {  // +/- flip
 		for(int j = 0; j < meshPerRow; j++) {
 
 			int currentIndex = i*meshPerRow + j;
@@ -412,7 +404,6 @@ void Dx12Renderer::LoadAssets() {
 			_meshes [i*meshPerRow + j]->TranslateY(traslateValueY);
 		}
 	}
-
 
 	const UINT vertexBufferSize = _meshesVertices.size() * sizeof(Vertex);
 
@@ -463,7 +454,7 @@ void Dx12Renderer::LoadAssets() {
 		_commandList->ResourceBarrier(1, &vertexBufferResourceBarrier);
 	}
 
-	const UINT indexBufferSize = sizeof(cubeIndices);
+	const UINT indexBufferSize = _cubeIndices.size() * sizeof(unsigned short);
 
 	// Create the index buffer resource in the GPU's default heap and copy index data into it using the upload heap.
 	// The upload resource must not be released until after the GPU has finished using it.
@@ -499,7 +490,7 @@ void Dx12Renderer::LoadAssets() {
 	// Upload the index buffer to the GPU.
 	{
 		D3D12_SUBRESOURCE_DATA indexData = {};
-		indexData.pData = reinterpret_cast<BYTE*>(cubeIndices);
+		indexData.pData = reinterpret_cast<BYTE*>(_cubeIndices.data());
 		indexData.RowPitch = indexBufferSize;
 		indexData.SlicePitch = indexData.RowPitch;
 
@@ -653,7 +644,7 @@ void Dx12Renderer::LoadAssets() {
 	_vertexBufferView.SizeInBytes = _meshesVertices.size() * sizeof(Vertex);
 
 	_indexBufferView.BufferLocation = _indexBuffer->GetGPUVirtualAddress();
-	_indexBufferView.SizeInBytes = sizeof(cubeIndices);
+	_indexBufferView.SizeInBytes = _cubeIndices.size() * sizeof(unsigned short);
 	_indexBufferView.Format = DXGI_FORMAT_R16_UINT;
 
 	float fovAngleY = 45.0f * XM_PI / 180.0f;
@@ -684,7 +675,7 @@ void Dx12Renderer::LoadAssets() {
 		DirectX::XMMatrixTranspose(perspectiveMatrix * orientationMatrix)
 	);
 
-	_cameraPositionX = 0.0f;
+	_cameraPositionX = -10.0f;
 	_cameraPositionY = 2.0f;
 	_cameraPositionZ = 3.5f;
 
@@ -814,7 +805,7 @@ void Dx12Renderer::PopulateCommandList() {
 		_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		_commandList->IASetVertexBuffers(0, 1, &_vertexBufferView);
 		_commandList->IASetIndexBuffer(&_indexBufferView);
-		_commandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+		_commandList->DrawIndexedInstanced(_cubeIndices.size(), 1, 0, 0, 0);
 
 		// Indicate that the render target will now be used to present when the command list is done executing.
 		CD3DX12_RESOURCE_BARRIER presentResourceBarrier =
@@ -863,4 +854,222 @@ void Dx12Renderer::WaitForPreviousFrame() {
 	}
 
 	_frameIndex = _swapChain->GetCurrentBackBufferIndex();
+}
+
+void Dx12Renderer::loadVertices(char* fileName) {
+	FILE* fp;
+
+	if(!(fp = fopen(fileName, "r"))) {
+		assert(0 && "Can not open file!");
+	}
+
+	int size = 0;
+	fseek(fp, 0, SEEK_END);
+	size = ftell(fp);
+
+	if(!size) {
+		assert(0 && "file is empty!");
+	}
+
+	fseek(fp, 0, SEEK_SET);
+
+	char c;
+	bool comment = false;
+	bool face = false;
+	bool vertex = false;
+	bool color = false;
+
+
+	char buffer [32] = { 0 };
+
+	Vertex currentVertex;
+
+	uint8_t valueConuter = 0;
+	uint8_t charCounter = 0;
+
+	float value [4] = { 0 };
+
+	while((c = getc(fp)) != EOF) {
+		if(c == '#') {
+			comment = true;
+			continue;
+		}
+
+		if(c == '\n') {
+			if(!face && !vertex && !color) {
+				comment = false;
+				continue;
+			}
+
+			if(buffer [0] != '\0') {
+				if(!color) {
+					if(valueConuter > 2) {
+						assert(0 && "Invalid data in file");
+					}
+				} else {
+					if(valueConuter > 3) {
+						assert(0 && "Invalid data in file");
+					}
+				}
+
+				value [valueConuter] = atof(buffer);
+				valueConuter++;
+
+				//clear buffer
+				for(int i = 0; i < 32; i++) {
+					buffer [i] = '\0';
+				}
+
+				charCounter = 0;
+			}
+			if(!color) {
+				if(valueConuter != 3) { // too much or less than shuld be 
+					assert(0 && "Invalid data in file");
+				}
+			} else {
+				if(valueConuter != 4) { // too much or less than shuld be 
+					assert(0 && "Invalid data in file");
+				}
+			}
+
+			if(color) {
+				if(!vertex) {
+					assert(0 && "Invalid data in file, color without vertex");
+				}
+
+				currentVertex.color = { value [0], value [1], value [2], value[3] };
+				_meshesVertices.push_back(currentVertex);
+
+			} else if(face) {
+				_cubeIndices.push_back((unsigned short) value [0]);
+				_cubeIndices.push_back((unsigned short) value [1]);
+				_cubeIndices.push_back((unsigned short) value [2]);
+			}
+
+			comment = false;
+			face = false;
+			vertex = false;
+			color = false;
+			valueConuter = 0;
+
+			continue;
+		}
+
+		if(comment) {
+			continue;
+		}
+
+		if(c == 'v') {
+			comment = false;
+			face = false;
+			vertex = true;
+			color = false;
+			continue;
+		}
+
+		if(c == 'c') {
+			comment = false;
+			face = false;
+			color = true;
+
+			if(valueConuter != 3) { // too much or less than shuld be 
+				assert(0 && "Invalid data in file");
+			}
+
+			currentVertex.position = { value [0], value [1], value [2] };
+			valueConuter = 0;
+
+			continue;
+		}
+
+		if(c == 'f') {
+			comment = false;
+			face = true;
+			vertex = false;
+			color = false;
+			continue;
+		}
+
+		if(c == ' ' || c == '\t') {
+			//flush value
+			if(buffer [0] == '\0') {// smotething wrong meybe 2 separators?
+				continue;
+			}
+
+			if(!color) {
+				if(valueConuter > 2) {
+					assert(0 && "Invalid data in file");
+				}
+			}
+			else {
+				if(valueConuter > 3) {
+					assert(0 && "Invalid data in file");
+				}
+			}
+
+			value [valueConuter] = atof(buffer);
+			valueConuter++;
+
+			//clear buffer
+			for(int i = 0; i < 32; i++) {
+				buffer [i] = '\0';
+			}
+
+			charCounter = 0;
+			continue;
+		}
+
+		buffer [charCounter] = c;
+		charCounter++;
+	}
+
+	if(valueConuter != 0) {
+		if(buffer [0] != '\0') {
+			if(!color) {
+				if(valueConuter > 2) {
+					assert(0 && "Invalid data in file");
+				}
+			}
+			else {
+				if(valueConuter > 3) {
+					assert(0 && "Invalid data in file");
+				}
+			}
+
+			value [valueConuter] = atof(buffer);
+			valueConuter++;
+
+			//clear buffer
+			for(int i = 0; i < 32; i++) {
+				buffer [i] = '\0';
+			}
+
+			charCounter = 0;
+		}
+		if(!color) {
+			if(valueConuter != 3) { // too much or less than shuld be 
+				assert(0 && "Invalid data in file");
+			}
+		}
+		else {
+			if(valueConuter != 4) { // too much or less than shuld be 
+				assert(0 && "Invalid data in file");
+			}
+		}
+
+		if(color) {
+			if(!vertex) {
+				assert(0 && "Invalid data in file, color without vertex");
+			}
+
+			currentVertex.color = { value [0], value [1], value [2], value [3] };
+			_meshesVertices.push_back(currentVertex);
+
+		}
+		else if(face) {
+			_cubeIndices.push_back((unsigned short) value [0]);
+			_cubeIndices.push_back((unsigned short) value [1]);
+			_cubeIndices.push_back((unsigned short) value [2]);
+		}
+	}
 }
