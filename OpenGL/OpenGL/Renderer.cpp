@@ -157,6 +157,8 @@ void Renderer::init() {
 		-0.25f,  0.25f, -0.25f
 	};
 
+	_vertexPerMesh = 36;
+
 	m_program = glCreateProgram();
 	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fs, 1, fs_source, NULL);
@@ -244,6 +246,31 @@ void Renderer::UpdateCamera() {
 	if(_begin == 0)
 		_begin = clock();
 
+	_meshNum = 30;
+	unsigned int rowNum = (unsigned int) (sqrt(_meshNum));
+	unsigned int meshPerRow = _meshNum / rowNum;
+
+	unsigned int centerIndex = meshPerRow / 2;
+
+	float objectWidth = 2;
+	float objectHeight = 2;
+
+	float traslateValueX [30] = { 0 };
+	float traslateValueY [30] = { 0 };
+
+	for(int i = 0; i < rowNum; i++) {  // +/- flip
+		for(int j = 0; j < meshPerRow; j++) {
+
+			int currentIndex = i*meshPerRow + j;
+			if((i*meshPerRow + j) >= _meshNum) {
+				break;
+			}
+
+			traslateValueY[currentIndex] = (float) (((int) centerIndex - i) * objectWidth);
+			traslateValueX[currentIndex] = (float) (((int) centerIndex - j) * objectHeight);
+
+		}
+	}
 	clock_t end = clock();
 
 	static int angle = 0;
@@ -255,7 +282,7 @@ void Renderer::UpdateCamera() {
 
 	for(int i = 0; i < 30; i++) {
 		
-		vmath::mat4 mv_matrix = vmath::translate(vmath::vec3(1.0f * i, 0.0f, 0.0f)) *
+		vmath::mat4 mv_matrix = vmath::translate(vmath::vec3(traslateValueX[i],traslateValueY[i], 0.0f)) *
 								vmath::rotate((float)angle, vmath::vec3(0.0f, 0.0f, 1.0f)) *
 								vmath::lookat(vmath::vec3(_cameraPosX, _cameraPosY, _cameraPosZ),
 											  vmath::vec3(0.0f, 0.0f, 0.0f),
