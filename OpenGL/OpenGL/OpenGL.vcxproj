@@ -150,10 +150,11 @@
   <ItemGroup>
     <ClCompile Include="gl3w.c" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="MyTriangle.cpp" />
+    <ClCompile Include="Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MyTriangle.h" />
+    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="Share.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

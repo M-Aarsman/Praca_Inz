@@ -1,20 +1,16 @@
-#ifndef _myTriangle
-#define _myTriangle
+#ifndef _renderer
+#define _renderer
 
 #include "GL/gl3w.h"
 #include "GLFW/glfw3.h"
-#include <vmath.h>
+#include "Share.h"
+#include <vector>
+#include <time.h>
 
-enum Key {
-	KEY_UP,
-	KEY_DOWN,
-	KEY_NUM
-};
-
-class MyTriangle {
+class Renderer {
 public:
-	MyTriangle(int height, int width, int majorVersion, int minorVersion,const char title [40]);
-	~MyTriangle();
+	Renderer(int height, int width, int majorVersion, int minorVersion,const char title [40]);
+	~Renderer();
 	void run();
 	static void OnKey(GLFWwindow* window, int key, int scancode, int action, int mods);
 	void UpdateCamera();
@@ -24,6 +20,7 @@ private:
 	void close();
 
 private:
+	void loadVertices(char* fileName);
 	int m_windowHeight;
 	int m_windowWidth;
 	char m_title [128];
@@ -42,6 +39,13 @@ private:
 	float _cameraPosX = 0;
 	float _cameraPosY = 0;
 	float _cameraPosZ = 0;
+
+	std::vector<Vertex> vertices;
+
+	unsigned int _vertexPerMesh = 0;
+	unsigned int _meshNum;
+
+	clock_t _begin = 0;
 };
 
 #endif

@@ -1,10 +1,10 @@
-#include "MyTriangle.h"
+#include "Renderer.h"
 #include <string.h>
 #include <assert.h>
 
 bool KEYS [Key::KEY_NUM] = { 0 };
 
-MyTriangle::MyTriangle(int height, int width, int majorVersion, int minorVersion, const char title [40])
+Renderer::Renderer(int height, int width, int majorVersion, int minorVersion, const char title [40])
   : m_windowHeight(height),
 	m_windowWidth(width),
 	m_majorVersion(majorVersion),
@@ -14,11 +14,11 @@ MyTriangle::MyTriangle(int height, int width, int majorVersion, int minorVersion
 	init();
 }
 
-MyTriangle::~MyTriangle() {
+Renderer::~Renderer() {
 	close();
 }
 
-void MyTriangle::run() {
+void Renderer::run() {
 	bool running = true;
 
 	do {
@@ -35,7 +35,7 @@ void MyTriangle::run() {
 	glfwTerminate();
 }
 
-void MyTriangle::init() {
+void Renderer::init() {
 	_cameraPosX = 1.9f;
 	_cameraPosY = -0.9f;
 	_cameraPosZ = 2.0f;
@@ -193,7 +193,7 @@ void MyTriangle::init() {
 	glDepthFunc(GL_LEQUAL);
 }
 
-void MyTriangle::render(double currentTime) {
+void Renderer::render(double currentTime) {
 	static const GLfloat red [] = { 1.0f, 0.0f, 0.0f, 1.0f };
 	static const GLfloat one = 1.0f;
 	m_aspect = (float) m_windowWidth / (float) m_windowHeight;
@@ -205,15 +205,16 @@ void MyTriangle::render(double currentTime) {
 	glUniformMatrix4fv(m_proj_location, 1, GL_FALSE, m_proj_matrix);
 	//float f = (float) currentTime * 0.3f;
 	UpdateCamera();
-	glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
-void MyTriangle::close() {
+void Renderer::close() {
 	glDeleteVertexArrays(1, &m_vao);
 	glDeleteProgram(m_program);
 }
 
-void MyTriangle::OnKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
+void Renderer::loadVertices(char * fileName) {}
+
+void Renderer::OnKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	if(action == 1) {
 		if(key == GLFW_KEY_UP) {
 			KEYS [KEY_UP] = true;
@@ -232,7 +233,7 @@ void MyTriangle::OnKey(GLFWwindow* window, int key, int scancode, int action, in
 	}
 
 }
-void MyTriangle::UpdateCamera() {
+void Renderer::UpdateCamera() {
 	if(KEYS [KEY_UP]) {
 		_cameraPosZ += 0.1;
 	} 
@@ -240,10 +241,28 @@ void MyTriangle::UpdateCamera() {
 		_cameraPosZ -= 0.1;
 	}
 
-	vmath::mat4 mv_matrix = vmath::lookat(vmath::vec3(_cameraPosX, _cameraPosY, _cameraPosZ),
-										  vmath::vec3(0.0f, 0.0f, 0.0f),
-										  vmath::vec3(0.0f, 1.0f, 0.0f));
-	glUniformMatrix4fv(m_mv_location, 1, GL_FALSE, mv_matrix);
+	if(_begin == 0)
+		_begin = clock();
+
+	clock_t end = clock();
+
+	static int angle = 0;
+	if(double(end - _begin) / CLOCKS_PER_SEC > 0.03) {
+		angle = (angle + 3) % 360;
+		_begin = end;
+	}
+
+
+	for(int i = 0; i < 30; i++) {
+		
+		vmath::mat4 mv_matrix = vmath::translate(vmath::vec3(1.0f * i, 0.0f, 0.0f)) *
+								vmath::rotate((float)angle, vmath::vec3(0.0f, 0.0f, 1.0f)) *
+								vmath::lookat(vmath::vec3(_cameraPosX, _cameraPosY, _cameraPosZ),
+											  vmath::vec3(0.0f, 0.0f, 0.0f),
+											  vmath::vec3(0.0f, 1.0f, 0.0f));
+		glUniformMatrix4fv(m_mv_location, 1, GL_FALSE, mv_matrix);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
 }
 /*void MyTriangle::onResize(int w, int h) {}
 
