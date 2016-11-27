@@ -2,6 +2,8 @@
 #include <string.h>
 #include <assert.h>
 
+bool KEYS [Key::KEY_NUM] = { 0 };
+
 MyTriangle::MyTriangle(int height, int width, int majorVersion, int minorVersion, const char title [40])
   : m_windowHeight(height),
 	m_windowWidth(width),
@@ -34,6 +36,10 @@ void MyTriangle::run() {
 }
 
 void MyTriangle::init() {
+	_cameraPosX = 1.9f;
+	_cameraPosY = -0.9f;
+	_cameraPosZ = 2.0f;
+
 	if(!glfwInit()) {
 		assert(0 && "Failed to initialize GLFW\n");
 		return;
@@ -58,7 +64,7 @@ void MyTriangle::init() {
 	}
 
 	glfwMakeContextCurrent(m_window);
-
+	glfwSetKeyCallback(m_window, OnKey);
 	glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 	gl3wInit();
 
@@ -198,10 +204,7 @@ void MyTriangle::render(double currentTime) {
 	glUseProgram(m_program);
 	glUniformMatrix4fv(m_proj_location, 1, GL_FALSE, m_proj_matrix);
 	//float f = (float) currentTime * 0.3f;
-	vmath::mat4 mv_matrix = vmath::lookat(vmath::vec3(1.9f, -0.9f, 4.0f),
-										  vmath::vec3(0.0f, 0.0f, 0.0f),
-										  vmath::vec3(0.0f, 1.0f, 0.0f));
-	glUniformMatrix4fv(m_mv_location, 1, GL_FALSE, mv_matrix);
+	UpdateCamera();
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
@@ -210,6 +213,38 @@ void MyTriangle::close() {
 	glDeleteProgram(m_program);
 }
 
+void MyTriangle::OnKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if(action == 1) {
+		if(key == GLFW_KEY_UP) {
+			KEYS [KEY_UP] = true;
+		}
+		if(key == GLFW_KEY_DOWN) {
+			KEYS [KEY_DOWN] = true;
+		}
+	}
+	else if(action == 0) {
+		if(key == GLFW_KEY_UP) {
+			KEYS [KEY_UP] = false;
+		}
+		if(key == GLFW_KEY_DOWN) {
+			KEYS [KEY_DOWN] = false;
+		}
+	}
+
+}
+void MyTriangle::UpdateCamera() {
+	if(KEYS [KEY_UP]) {
+		_cameraPosZ += 0.1;
+	} 
+	if(KEYS [KEY_DOWN]) {
+		_cameraPosZ -= 0.1;
+	}
+
+	vmath::mat4 mv_matrix = vmath::lookat(vmath::vec3(_cameraPosX, _cameraPosY, _cameraPosZ),
+										  vmath::vec3(0.0f, 0.0f, 0.0f),
+										  vmath::vec3(0.0f, 1.0f, 0.0f));
+	glUniformMatrix4fv(m_mv_location, 1, GL_FALSE, mv_matrix);
+}
 /*void MyTriangle::onResize(int w, int h) {}
 
 void MyTriangle::onKey(int key, int action) {}
