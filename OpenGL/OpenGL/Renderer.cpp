@@ -79,12 +79,14 @@ void Renderer::init() {
 		"    vec4 color;                                                    \n"
 		"} vs_out;                                                          \n"
 		"                                                                   \n"
-		"uniform mat4 m_mv_matrix;                                          \n"
+		"uniform mat4 m_camera;												\n"
 		"uniform mat4 m_proj_matrix;                                        \n"
+		"uniform mat4 m_rotate;												\n"
+		"uniform mat4 m_translate;												\n"
 		"                                                                   \n"
 		"void main(void)                                                    \n"
 		"{                                                                  \n"
-		"    gl_Position = m_proj_matrix * m_mv_matrix * position;			\n"
+		"    gl_Position = m_proj_matrix * m_camera * m_translate * m_rotate * position;	\n"
 		"    vs_out.color = position * 2.0 + vec4(0.5, 0.5, 0.5, 0.0);      \n"
 		"}                                                                  \n"
 	};
@@ -155,6 +157,7 @@ void Renderer::init() {
 		0.25f,  0.25f,  0.25f,
 		-0.25f,  0.25f,  0.25f,
 		-0.25f,  0.25f, -0.25f
+
 	};
 
 	_vertexPerMesh = 36;
@@ -173,9 +176,17 @@ void Renderer::init() {
 
 	glLinkProgram(m_program);
 
-	m_mv_location = glGetUniformLocation(m_program, "m_mv_matrix");
 	m_proj_location = glGetUniformLocation(m_program, "m_proj_matrix");
 
+	m_camera_matrix = vmath::lookat(vmath::vec3(_cameraPosX, _cameraPosY, _cameraPosZ - 10),
+				  vmath::vec3(0.0f, 0.0f, 0.0f),
+				  vmath::vec3(0.0f, 1.0f, 0.0f));
+
+	m_camera_location = glGetUniformLocation(m_program, "m_camera");
+	m_roate_location = glGetUniformLocation(m_program, "m_rotate");
+	m_translate_location = glGetUniformLocation(m_program, "m_translate");
+	m_translate_matrix = vmath::translate(0.0f, 0.0f, 0.0f);
+	m_rotate_matrix = vmath::rotate(1.0f, vmath::vec3(0.0f, 0.0f, 1.0f));
 	glGenVertexArrays(1, &m_vao);
 	glBindVertexArray(m_vao);
 
@@ -193,20 +204,66 @@ void Renderer::init() {
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
+
+	m_aspect = (float) m_windowWidth / (float) m_windowHeight;
+	m_proj_matrix = vmath::perspective(50.0f, m_aspect, 0.1f, 1000.0f);
+	glViewport(0, 0, m_windowWidth, m_windowHeight);
+	glUseProgram(m_program);
+	glUniformMatrix4fv(m_camera_location, 1, GL_FALSE, m_camera_matrix);
+	glUniformMatrix4fv(m_proj_location, 1, GL_FALSE, m_proj_matrix);
+	glUniformMatrix4fv(m_translate_location, 1, GL_FALSE, m_translate_matrix);
+
+	_meshNum = 18000;
+	unsigned int rowNum = (unsigned int) (sqrt(_meshNum));
+	unsigned int meshPerRow = _meshNum / rowNum;
+
+	unsigned int centerIndex = meshPerRow / 2;
+
+	float objectWidth = 2;
+	float objectHeight = 2;
+
+
+
+	for(int i = 0; i < rowNum; i++) {  // +/- flip
+		for(int j = 0; j < meshPerRow; j++) {
+
+			int currentIndex = i*meshPerRow + j;
+			if((i*meshPerRow + j) >= _meshNum) {
+				break;
+			}
+
+			_traslateValueY [currentIndex] = (float) (((int) centerIndex - i) * objectWidth);
+			_traslateValueX [currentIndex] = (float) (((int) centerIndex - j) * objectHeight);
+
+		}
+	}
 }
 
 void Renderer::render(double currentTime) {
 	static const GLfloat red [] = { 1.0f, 0.0f, 0.0f, 1.0f };
 	static const GLfloat one = 1.0f;
-	m_aspect = (float) m_windowWidth / (float) m_windowHeight;
-	m_proj_matrix = vmath::perspective(50.0f, m_aspect, 0.1f, 1000.0f);
-	glViewport(0, 0, m_windowWidth, m_windowHeight);
 	glClearBufferfv(GL_COLOR, 0, red);
 	glClearBufferfv(GL_DEPTH, 0, &one);
-	glUseProgram(m_program);
-	glUniformMatrix4fv(m_proj_location, 1, GL_FALSE, m_proj_matrix);
-	//float f = (float) currentTime * 0.3f;
-	UpdateCamera();
+	
+	if(_begin == 0)
+		_begin = clock();
+
+	clock_t end = clock();
+
+	static int angle = 0;
+	if(double(end - _begin) / CLOCKS_PER_SEC > 0.03) {
+		angle = (angle + 3) % 360;
+		_begin = end;
+
+		m_rotate_matrix = vmath::rotate((float) angle, vmath::vec3(0.0f, 0.0f, 1.0f));
+		glUniformMatrix4fv(m_roate_location, 1, GL_FALSE, m_rotate_matrix);
+	}
+
+	for(int i = 0; i < _meshNum; i++) {
+		m_translate_matrix = vmath::translate(_traslateValueX [i], _traslateValueY [i], 0.0f);
+		glUniformMatrix4fv(m_translate_location, 1, GL_FALSE, m_translate_matrix);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
 }
 
 void Renderer::close() {
@@ -246,48 +303,9 @@ void Renderer::UpdateCamera() {
 	if(_begin == 0)
 		_begin = clock();
 
-	_meshNum = 30;
-	unsigned int rowNum = (unsigned int) (sqrt(_meshNum));
-	unsigned int meshPerRow = _meshNum / rowNum;
 
-	unsigned int centerIndex = meshPerRow / 2;
-
-	float objectWidth = 2;
-	float objectHeight = 2;
-
-	float traslateValueX [30] = { 0 };
-	float traslateValueY [30] = { 0 };
-
-	for(int i = 0; i < rowNum; i++) {  // +/- flip
-		for(int j = 0; j < meshPerRow; j++) {
-
-			int currentIndex = i*meshPerRow + j;
-			if((i*meshPerRow + j) >= _meshNum) {
-				break;
-			}
-
-			traslateValueY[currentIndex] = (float) (((int) centerIndex - i) * objectWidth);
-			traslateValueX[currentIndex] = (float) (((int) centerIndex - j) * objectHeight);
-
-		}
-	}
-	clock_t end = clock();
-
-	static int angle = 0;
-	if(double(end - _begin) / CLOCKS_PER_SEC > 0.03) {
-		angle = (angle + 3) % 360;
-		_begin = end;
-	}
-
-
-	for(int i = 0; i < 30; i++) {
+	for(int i = 0; i < 5000; i++) {
 		
-		vmath::mat4 mv_matrix = vmath::translate(vmath::vec3(traslateValueX[i],traslateValueY[i], 0.0f)) *
-								vmath::rotate((float)angle, vmath::vec3(0.0f, 0.0f, 1.0f)) *
-								vmath::lookat(vmath::vec3(_cameraPosX, _cameraPosY, _cameraPosZ),
-											  vmath::vec3(0.0f, 0.0f, 0.0f),
-											  vmath::vec3(0.0f, 1.0f, 0.0f));
-		glUniformMatrix4fv(m_mv_location, 1, GL_FALSE, mv_matrix);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
 }

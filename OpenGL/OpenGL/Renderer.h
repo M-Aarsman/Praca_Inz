@@ -30,15 +30,25 @@ private:
 	GLuint m_program;
 	GLuint m_vao;
 	GLuint m_buffer;
+	
 	GLint  m_proj_location;
+	GLint  m_camera_location;
+	GLint  m_roate_location;
+	GLint  m_translate_location;
+
 	vmath::mat4 m_proj_matrix;
-	GLint  m_mv_location;
-	vmath::mat4 m_mv_matrix;
+	vmath::mat4 m_camera_matrix;
+	vmath::mat4 m_rotate_matrix;
+	vmath::mat4 m_translate_matrix;
+
 	float m_aspect;
 
 	float _cameraPosX = 0;
 	float _cameraPosY = 0;
 	float _cameraPosZ = 0;
+
+	float _traslateValueX [18000] = { 0 };
+	float _traslateValueY [18000] = { 0 };
 
 	std::vector<Vertex> vertices;
 
