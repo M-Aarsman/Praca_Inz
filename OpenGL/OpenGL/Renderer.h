@@ -18,15 +18,17 @@ private:
 	void init();
 	void render(double currentTime);
 	void close();
+	void loadVertices(char* fileName);
 
 private:
-	void loadVertices(char* fileName);
 	int m_windowHeight;
 	int m_windowWidth;
 	char m_title [128];
+
 	int m_majorVersion;
 	int m_minorVersion;
 	GLFWwindow* m_window;
+
 	GLuint m_program;
 	GLuint m_vao;
 	GLuint m_buffer;
@@ -50,7 +52,8 @@ private:
 	float _traslateValueX [18000] = { 0 };
 	float _traslateValueY [18000] = { 0 };
 
-	std::vector<Vertex> vertices;
+	std::vector<float> _vertices;
+	std::vector<float> _normals;
 
 	unsigned int _vertexPerMesh = 0;
 	unsigned int _meshNum;
