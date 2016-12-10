@@ -22,7 +22,7 @@
     <ProjectGuid>{F095A299-E3E1-4B83-8AED-D54A5DF1D974}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Dx12</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.10586.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -148,13 +148,11 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Dx12Renderer.cpp" />
-    <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Win32Application.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="Dx12Renderer.h" />
-    <ClInclude Include="Mesh.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Shared.h" />
     <ClInclude Include="Win32Application.h" />

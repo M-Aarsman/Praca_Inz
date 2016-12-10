@@ -1,15 +1,39 @@
 #pragma once
 #include <d3d12.h>
 #include "d3dx12.h"
-#include "Mesh.h"
+//#include "Mesh.h"
 #include <dxgi1_4.h>
 
 #include <vector>
+#include "Shared.h"
+#include <unordered_map>
+#include  <memory>
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 
 using namespace DirectX;
+
+struct TranslateData {
+	TranslateData()
+		: X(0.0f),
+		Y(0.0f),
+		Z(0.0f) {};
+
+	float X;
+	float Y;
+	float Z;
+};
+
+static DirectX::XMFLOAT4X4 Identity4x4() {
+	static DirectX::XMFLOAT4X4 I(
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f);
+
+	return I;
+}
 
 enum Key {
 	KEY_UP,
@@ -116,7 +140,7 @@ private:
 	std::vector<Vertex> _meshesVertices;
 	std::vector<unsigned short> _cubeIndices;
 
-	std::vector<Mesh*> _meshes;
+	std::vector<TranslateData> _translateValues;
 
 	unsigned int _vertexPerMesh = 0;
 	unsigned int _meshNum;

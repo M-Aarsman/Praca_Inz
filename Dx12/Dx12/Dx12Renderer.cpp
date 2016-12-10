@@ -348,63 +348,6 @@ void Dx12Renderer::LoadAssets() {
 
 	loadVertices("cubeVertices.txt");
 	
-	_meshes.push_back(new Mesh(&_meshesVertices, 0, _meshesVertices.size()));
-	int begin = 0;
-	_vertexPerMesh = _meshesVertices.size();
-	int end = begin + _vertexPerMesh;
-
-	int indicesPerMesh = _cubeIndices.size();
-
-	// I want to put mesh togeter in some kind of square
-
-	unsigned int rowNum = (unsigned int) (sqrt(_meshNum));
-	unsigned int meshPerRow = _meshNum / rowNum;
-
-	unsigned int centerIndex = meshPerRow / 2; // the cube index (i,j) which will be around 0,0
-
-	//now we have too have smoewhere all of vertices for all cube! (TODO: optimalize someday)
-	 //hope this not take ages to copy it....
-
-	for(size_t i = 0; i < _vertexPerMesh * (_meshNum - 1); i++) {
-		_meshesVertices.push_back(_meshesVertices [i % _vertexPerMesh]);
-	}
-
-	for(size_t i = 0; i < _meshNum - 1; i++) {
-		for(size_t j = 0; j < indicesPerMesh; j++) {
-			_cubeIndices.push_back(_cubeIndices [j] + ((i+1) * _vertexPerMesh));
-		}
-	}
-
-	//TODO: !!! calculate object width + object height
-
-	int objectWidth = 4;
-	int objectHeight = 4;
-
-	//create Meshes
-	for(size_t i = 1; i < _meshNum; i++) {
-		unsigned int begin = _vertexPerMesh * i;
-		end = _vertexPerMesh * i + _vertexPerMesh;
-		_meshes.push_back(new Mesh(&_meshesVertices, begin, end));
-	}
-
-	// and now translate it...
-
-	for(int i = 0; i < rowNum; i++) {  // +/- flip
-		for(int j = 0; j < meshPerRow; j++) {
-
-			int currentIndex = i*meshPerRow + j;
-			if((i*meshPerRow + j) >= _meshNum) {
-				break;
-			}
-
-			float traslateValueY = (float) (((int) centerIndex - i) * objectWidth);
-			float traslateValueX = (float) (((int) centerIndex - j) * objectHeight);
-
-			_meshes [i*meshPerRow + j]->TranslateX(traslateValueX);
-			_meshes [i*meshPerRow + j]->TranslateY(traslateValueY);
-		}
-	}
-
 	const UINT vertexBufferSize = _meshesVertices.size() * sizeof(Vertex);
 
 	// Create the vertex buffer resource in the GPU's default heap and copy vertex data into it using the upload heap.
@@ -504,7 +447,9 @@ void Dx12Renderer::LoadAssets() {
 	// Create a descriptor heap for the constant buffers.
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-		heapDesc.NumDescriptors = FrameCount;
+		// Need a CBV descriptor for each object for each frame resource,
+		// +1 for the perPass CBV for each frame resource.
+		heapDesc.NumDescriptors = FrameCount * _meshNum;
 		heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		// This flag indicates that this descriptor heap can be bound to the pipeline and that descriptors contained in it can be referenced by a root table.
 		heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
@@ -543,6 +488,7 @@ void Dx12Renderer::LoadAssets() {
 			}
 			_device->CreateRenderTargetView(_renderTargets [n], nullptr, rtvHandle);
 			rtvHandle.Offset(1, _rtvDescriptorSize);
+		
 		}
 	}
 
@@ -588,7 +534,7 @@ void Dx12Renderer::LoadAssets() {
 		_device->CreateDepthStencilView(_depthStencil, &dsvDesc, _dsvHeap->GetCPUDescriptorHandleForHeapStart());
 	}
 
-	CD3DX12_RESOURCE_DESC constantBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(FrameCount * c_alignedConstantBufferSize);
+	CD3DX12_RESOURCE_DESC constantBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(FrameCount *_meshNum * c_alignedConstantBufferSize);
 	result = _device->CreateCommittedResource(
 		&uploadHeapProperties,
 		D3D12_HEAP_FLAG_NONE,
@@ -607,13 +553,15 @@ void Dx12Renderer::LoadAssets() {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cbvCpuHandle(_cbvHeap->GetCPUDescriptorHandleForHeapStart());
 
 	for(int n = 0; n < FrameCount; n++) {
-		D3D12_CONSTANT_BUFFER_VIEW_DESC desc;
-		desc.BufferLocation = cbvGpuAddress;
-		desc.SizeInBytes = c_alignedConstantBufferSize;
-		_device->CreateConstantBufferView(&desc, cbvCpuHandle);
+		for(int i = 0; i < _meshNum; i++) {
+			D3D12_CONSTANT_BUFFER_VIEW_DESC desc;
+			desc.BufferLocation = cbvGpuAddress;
+			desc.SizeInBytes = c_alignedConstantBufferSize;
+			_device->CreateConstantBufferView(&desc, cbvCpuHandle);
 
-		cbvGpuAddress += desc.SizeInBytes;
-		cbvCpuHandle.Offset(_cbvDescriptorSize);
+			cbvGpuAddress += desc.SizeInBytes;
+			cbvCpuHandle.Offset(_cbvDescriptorSize);
+		}
 	}
 
 	// Map the constant buffers.
@@ -711,6 +659,44 @@ void Dx12Renderer::LoadAssets() {
 			}
 		}
 
+		_vertexPerMesh = _meshesVertices.size();
+		int indicesPerMesh = _cubeIndices.size();
+
+		// I want to put mesh togeter in some kind of square
+
+		unsigned int rowNum = (unsigned int) (sqrt(_meshNum));
+		unsigned int meshPerRow = _meshNum / rowNum;
+
+		unsigned int centerIndex = meshPerRow / 2; // the cube index (i,j) which will be around 0,0
+
+		//TODO: !!! calculate object width + object height
+
+		int objectWidth = 4;
+		int objectHeight = 4;
+
+		//create Meshes
+
+		for(int i = 0; i < rowNum; i++) {  // +/- flip
+			for(int j = 0; j < meshPerRow; j++) {
+
+				int currentIndex = i*meshPerRow + j;
+				if((i*meshPerRow + j) >= _meshNum) {
+					break;
+				}
+
+				float traslateValueY = (float) (((int) centerIndex - i) * objectWidth);
+				float traslateValueX = (float) (((int) centerIndex - j) * objectHeight);
+
+				TranslateData trans;
+				trans.X = traslateValueX;
+				trans.Y = traslateValueY;
+
+				_translateValues.push_back(trans);
+			}
+		}
+
+
+
 		// Wait for the command list to execute; we are reusing the same command 
 		// list in our main loop but for now, we just want to wait for setup to 
 		// complete before continuing.
@@ -720,12 +706,10 @@ void Dx12Renderer::LoadAssets() {
 }
 
 void Dx12Renderer::PopulateCommandList() {
-	static float i = 1;
-	i++;
-	UINT8* destination = _mappedConstantBuffer + (_frameIndex * c_alignedConstantBufferSize);
-	memcpy(destination, &_constantBufferData, sizeof(_constantBufferData));
+	//UINT8* destination = _mappedConstantBuffer + (_frameIndex * c_alignedConstantBufferSize);
+	//memcpy(destination, &_constantBufferData, sizeof(_constantBufferData));
 
-	XMStoreFloat4x4(&_constantBufferData.model, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationY(20)));
+	
 
 
 	HRESULT result = S_OK;
@@ -754,9 +738,9 @@ void Dx12Renderer::PopulateCommandList() {
 
 		if(double(end - _begin) / CLOCKS_PER_SEC > 0.05) {
 			_begin = clock();
-			for(int i = 0; i < _meshNum; i++) {
-				_meshes[i]->RotateZ(2.0);
-			}
+			//for(int i = 0; i < _meshNum; i++) {
+			//	_meshes[i]->RotateZ(2.0);
+			//}
 		}
 
 		const float clearColor [] = { 0.0f, 0.2f, 0.0f, 1.0f }; _frameIndex = _swapChain->GetCurrentBackBufferIndex();
@@ -767,8 +751,6 @@ void Dx12Renderer::PopulateCommandList() {
 		_commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
 		// Bind the current frame's constant buffer to the pipeline.
-		CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(_cbvHeap->GetGPUDescriptorHandleForHeapStart(), _frameIndex, _cbvDescriptorSize);
-		_commandList->SetGraphicsRootDescriptorTable(0, gpuHandle);
 
 		// Set the viewport and scissor rectangle.
 		_commandList->RSSetViewports(1, &_viewport);
@@ -779,8 +761,7 @@ void Dx12Renderer::PopulateCommandList() {
 			CD3DX12_RESOURCE_BARRIER::Transition(_renderTargets [_frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		_commandList->ResourceBarrier(1, &renderTargetResourceBarrier);
 
-		int a = 5 * 8;
-
+		
 		const UINT vertexBufferSize = _meshesVertices.size() * sizeof(Vertex);
 
 		D3D12_SUBRESOURCE_DATA vertexData = {};
@@ -801,11 +782,22 @@ void Dx12Renderer::PopulateCommandList() {
 		_commandList->ClearDepthStencilView(depthStencilView, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 		_commandList->OMSetRenderTargets(1, &renderTargetView, false, &depthStencilView);
+		
+		for(int i = 0; i < _meshNum; i++) {
+			CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(_cbvHeap->GetGPUDescriptorHandleForHeapStart(), _frameIndex * i, _cbvDescriptorSize);
+			_commandList->SetGraphicsRootDescriptorTable(0, gpuHandle);
 
-		_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		_commandList->IASetVertexBuffers(0, 1, &_vertexBufferView);
-		_commandList->IASetIndexBuffer(&_indexBufferView);
-		_commandList->DrawIndexedInstanced(_cubeIndices.size(), 1, 0, 0, 0);
+			XMStoreFloat4x4(&_constantBufferData.model, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationZ(i)));
+			XMStoreFloat4x4(&_constantBufferData.model, XMMatrixTranspose(XMMatrixTranslation(0.0f, _translateValues [i].X, _translateValues [i].Y)));
+
+			UINT8* destination = _mappedConstantBuffer + i * (_frameIndex * c_alignedConstantBufferSize);
+			memcpy(destination, &_constantBufferData, sizeof(_constantBufferData));
+
+			_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			_commandList->IASetVertexBuffers(0, 1, &_vertexBufferView);
+			_commandList->IASetIndexBuffer(&_indexBufferView);
+			_commandList->DrawIndexedInstanced(_cubeIndices.size(), _meshNum, 0 , 0, 0);
+		}
 
 		// Indicate that the render target will now be used to present when the command list is done executing.
 		CD3DX12_RESOURCE_BARRIER presentResourceBarrier =
@@ -951,7 +943,6 @@ void Dx12Renderer::loadVertices(char* fileName) {
 			vertex = false;
 			color = false;
 			valueConuter = 0;
-
 			continue;
 		}
 
