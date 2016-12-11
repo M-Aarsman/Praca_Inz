@@ -3,7 +3,7 @@
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
-	Dx12Renderer renderer(5000);
+	Dx12Renderer renderer(18000);
 	std::wstring title = L"Window";
 	Win32Application app(800, 600, title);
 	return app.Run(&renderer, hInstance, nCmdShow);

@@ -123,20 +123,31 @@ void GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter) {
 }
 
 void Dx12Renderer::CameraUpdate() {
-
+	bool changed = false;
 	//check which key is pushed
 	if(KEYS [KEY_UP]) {
 		ZoomIn(0.1);
+		changed = true;
 	}
 	if(KEYS [KEY_DOWN]) {
 		ZoomOut(0.1);
+		changed = true;
 	}
+	if(changed) {
+		const XMVECTORF32 eye = { _cameraPositionX, _cameraPositionY, _cameraPositionZ, 0.0f };
+		const XMVECTORF32 at = { _atPositionX, _atPositionY, _atPositionZ, 0.0f };
+		const XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
 
-	const XMVECTORF32 eye = { _cameraPositionX, _cameraPositionY, _cameraPositionZ, 0.0f };
-	const XMVECTORF32 at = { _atPositionX, _atPositionY, _atPositionZ, 0.0f };
-	const XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
+		XMStoreFloat4x4(&_constantBufferData.view, DirectX::XMMatrixTranspose(DirectX::XMMatrixLookAtRH(eye, at, up)));
 
-	XMStoreFloat4x4(&_constantBufferData.view, DirectX::XMMatrixTranspose(DirectX::XMMatrixLookAtRH(eye, at, up)));
+		for(int i = 0; i < _meshNum; i++) {
+
+			XMStoreFloat4x4(&_constantBufferData.model, XMMatrixTranspose(XMMatrixTranslation(0.0f, _translateValues [i].X, _translateValues [i].Y)));
+
+			UINT8* destination = _mappedConstantBuffer + i * c_alignedConstantBufferSize;
+			memcpy(destination, &_constantBufferData, sizeof(_constantBufferData));
+		}
+	}
 }
 
 void Dx12Renderer::ZoomIn(float n) {
@@ -695,7 +706,13 @@ void Dx12Renderer::LoadAssets() {
 			}
 		}
 
+		for(int i = 0; i < _meshNum; i++) {
 
+			XMStoreFloat4x4(&_constantBufferData.model, XMMatrixTranspose(XMMatrixTranslation(0.0f, _translateValues [i].X, _translateValues [i].Y)));
+
+			UINT8* destination = _mappedConstantBuffer + i * c_alignedConstantBufferSize;
+			memcpy(destination, &_constantBufferData, sizeof(_constantBufferData));
+		}
 
 		// Wait for the command list to execute; we are reusing the same command 
 		// list in our main loop but for now, we just want to wait for setup to 
@@ -708,10 +725,8 @@ void Dx12Renderer::LoadAssets() {
 void Dx12Renderer::PopulateCommandList() {
 	//UINT8* destination = _mappedConstantBuffer + (_frameIndex * c_alignedConstantBufferSize);
 	//memcpy(destination, &_constantBufferData, sizeof(_constantBufferData));
-
-	
-
-
+	bool rotate = false;
+	static float angle = 0.0f;
 	HRESULT result = S_OK;
 	result = _commandAllocator->Reset();
 	if(result != S_OK) {
@@ -732,15 +747,15 @@ void Dx12Renderer::PopulateCommandList() {
 	{
 		if(_begin == 0) {
 			_begin = clock();
+			rotate = true;
+			angle += 3;
 		}
 
 		float end = clock();
 
 		if(double(end - _begin) / CLOCKS_PER_SEC > 0.05) {
 			_begin = clock();
-			//for(int i = 0; i < _meshNum; i++) {
-			//	_meshes[i]->RotateZ(2.0);
-			//}
+			
 		}
 
 		const float clearColor [] = { 0.0f, 0.2f, 0.0f, 1.0f }; _frameIndex = _swapChain->GetCurrentBackBufferIndex();
@@ -782,21 +797,21 @@ void Dx12Renderer::PopulateCommandList() {
 		_commandList->ClearDepthStencilView(depthStencilView, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 		_commandList->OMSetRenderTargets(1, &renderTargetView, false, &depthStencilView);
-		
+		_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		_commandList->IASetVertexBuffers(0, 1, &_vertexBufferView);
+		_commandList->IASetIndexBuffer(&_indexBufferView);
+
 		for(int i = 0; i < _meshNum; i++) {
 			CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(_cbvHeap->GetGPUDescriptorHandleForHeapStart(),  i, _cbvDescriptorSize);
 			_commandList->SetGraphicsRootDescriptorTable(0, gpuHandle);
+			if(rotate) {
+				//TODO
+				//XMStoreFloat4x4(&_constantBufferData.model, XMMatrixTranspose(XROtate * XMMatrixTranslation(0.0f, _translateValues [i].X, _translateValues [i].Y)));
 
-			XMStoreFloat4x4(&_constantBufferData.model, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationZ(i)));
-			XMStoreFloat4x4(&_constantBufferData.model, XMMatrixTranspose(XMMatrixTranslation(0.0f, _translateValues [i].X, _translateValues [i].Y)));
-
-			UINT8* destination = _mappedConstantBuffer + i * c_alignedConstantBufferSize;
-			memcpy(destination, &_constantBufferData, sizeof(_constantBufferData));
-
-			_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			_commandList->IASetVertexBuffers(0, 1, &_vertexBufferView);
-			_commandList->IASetIndexBuffer(&_indexBufferView);
-			_commandList->DrawIndexedInstanced(_cubeIndices.size(), _meshNum, 0 , 0, 0);
+				//UINT8* destination = _mappedConstantBuffer + i * c_alignedConstantBufferSize;
+				//memcpy(destination, &_constantBufferData, sizeof(_constantBufferData));
+			}
+			_commandList->DrawIndexedInstanced(_cubeIndices.size(), 1, 0 , 0, 0);
 		}
 
 		// Indicate that the render target will now be used to present when the command list is done executing.
