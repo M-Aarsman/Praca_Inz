@@ -676,11 +676,11 @@ void Dx12Renderer::LoadAssets() {
 
 		//create Meshes
 
-		for(int i = 0; i < rowNum; i++) {  // +/- flip
-			for(int j = 0; j < meshPerRow; j++) {
+		for(int i = 0; i <= rowNum; i++) {  // +/- flip
+			for(int j = 0; j <= meshPerRow; j++) {
 
 				int currentIndex = i*meshPerRow + j;
-				if((i*meshPerRow + j) >= _meshNum) {
+				if(currentIndex >= _meshNum) {
 					break;
 				}
 
@@ -784,13 +784,13 @@ void Dx12Renderer::PopulateCommandList() {
 		_commandList->OMSetRenderTargets(1, &renderTargetView, false, &depthStencilView);
 		
 		for(int i = 0; i < _meshNum; i++) {
-			CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(_cbvHeap->GetGPUDescriptorHandleForHeapStart(), _frameIndex * i, _cbvDescriptorSize);
+			CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(_cbvHeap->GetGPUDescriptorHandleForHeapStart(),  i, _cbvDescriptorSize);
 			_commandList->SetGraphicsRootDescriptorTable(0, gpuHandle);
 
 			XMStoreFloat4x4(&_constantBufferData.model, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationZ(i)));
 			XMStoreFloat4x4(&_constantBufferData.model, XMMatrixTranspose(XMMatrixTranslation(0.0f, _translateValues [i].X, _translateValues [i].Y)));
 
-			UINT8* destination = _mappedConstantBuffer + i * (_frameIndex * c_alignedConstantBufferSize);
+			UINT8* destination = _mappedConstantBuffer + i * c_alignedConstantBufferSize;
 			memcpy(destination, &_constantBufferData, sizeof(_constantBufferData));
 
 			_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
