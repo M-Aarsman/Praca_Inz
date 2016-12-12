@@ -706,6 +706,8 @@ void Dx12Renderer::LoadAssets() {
 			}
 		}
 
+		_constantBufferData.rotation = Identity4x4();
+
 		for(int i = 0; i < _meshNum; i++) {
 
 			XMStoreFloat4x4(&_constantBufferData.model, XMMatrixTranspose(XMMatrixTranslation(0.0f, _translateValues [i].X, _translateValues [i].Y)));
@@ -747,15 +749,14 @@ void Dx12Renderer::PopulateCommandList() {
 	{
 		if(_begin == 0) {
 			_begin = clock();
-			rotate = true;
-			angle += 3;
 		}
 
 		float end = clock();
 
 		if(double(end - _begin) / CLOCKS_PER_SEC > 0.05) {
 			_begin = clock();
-			
+			rotate = true;
+			angle += 0.1;
 		}
 
 		const float clearColor [] = { 0.0f, 0.2f, 0.0f, 1.0f }; _frameIndex = _swapChain->GetCurrentBackBufferIndex();
@@ -805,11 +806,11 @@ void Dx12Renderer::PopulateCommandList() {
 			CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(_cbvHeap->GetGPUDescriptorHandleForHeapStart(),  i, _cbvDescriptorSize);
 			_commandList->SetGraphicsRootDescriptorTable(0, gpuHandle);
 			if(rotate) {
-				//TODO
-				//XMStoreFloat4x4(&_constantBufferData.model, XMMatrixTranspose(XROtate * XMMatrixTranslation(0.0f, _translateValues [i].X, _translateValues [i].Y)));
+				XMStoreFloat4x4(&_constantBufferData.rotation, XMMatrixRotationX(angle));
+				XMStoreFloat4x4(&_constantBufferData.model, XMMatrixTranspose(XMMatrixTranslation(0.0f, _translateValues [i].X, _translateValues [i].Y)));
 
-				//UINT8* destination = _mappedConstantBuffer + i * c_alignedConstantBufferSize;
-				//memcpy(destination, &_constantBufferData, sizeof(_constantBufferData));
+				UINT8* destination = _mappedConstantBuffer + i * c_alignedConstantBufferSize;
+				memcpy(destination, &_constantBufferData, sizeof(_constantBufferData));
 			}
 			_commandList->DrawIndexedInstanced(_cubeIndices.size(), 1, 0 , 0, 0);
 		}

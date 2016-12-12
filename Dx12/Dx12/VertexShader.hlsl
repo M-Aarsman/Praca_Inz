@@ -3,6 +3,7 @@ cbuffer ModelViewProjectionConstantBuffer : register(b0) {
 	matrix model;
 	matrix view;
 	matrix projection;
+	matrix rotation;
 };
 
 // Per-vertex data used as input to the vertex shader.
@@ -23,6 +24,7 @@ PixelShaderInput main(VertexShaderInput input) {
 	float4 pos = float4(input.pos, 1.0f);
 
 	// Transform the vertex position into projected space.
+	pos = mul(pos, rotation);
 	pos = mul(pos, model);
 	pos = mul(pos, view);
 	pos = mul(pos, projection);
