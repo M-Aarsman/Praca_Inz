@@ -65,6 +65,7 @@ void ErrorCheck(VkResult result) {
 	}
 }
 
+
 EShLanguage FindLanguage(const VkShaderStageFlagBits shader_type) {
 	switch(shader_type) {
 		case VK_SHADER_STAGE_VERTEX_BIT:
