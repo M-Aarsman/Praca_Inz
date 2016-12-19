@@ -1,6 +1,5 @@
 #include "Window.h"
 #include "VulkanRenderer.h"
-#include "VulkanWindow.h"
 
 #include <assert.h>
 #include <iostream>
@@ -50,18 +49,14 @@ Window::Window(VulkanRenderer* renderer, uint32_t sizeX, uint32_t sizeY, const c
 	initOSWindow();
 
 	_renderer = renderer;
-	_vulkanWindow = new VulkanWindow(renderer, _sizeX, _sizeY, _win32Window, _win32Instance);
-	_vulkanWindow->initVulcanSurface();
 }
 
 void Window::InitWindow() {
-	_vulkanWindow->InitVulkanWindow();
 	_opened = true;
 }
 
 void Window::Close() {
 	if(_opened) {
-		_vulkanWindow->DeinitVulkanWindow();
 		DestroyWindow(_win32Window);
 		UnregisterClass(_win32ClassName, _win32Instance);
 		_opened = false;
@@ -76,14 +71,14 @@ void Window::UpdateWindow() {
 	}
 
 	if(KEYS [KEY_UP] == true) {
-		_vulkanWindow->vulkanCamera.cameraPosition-= glm::vec3(0.05f);
-		_vulkanWindow->updateCamera();
+		_renderer->vulkanCamera.cameraPosition-= glm::vec3(0.05f);
+		_renderer->updateCamera();
 		KEYS [KEY_UP] = false;
 	}
 
 	if(KEYS [KEY_DOWN] == true) {
-		_vulkanWindow->vulkanCamera.cameraPosition += glm::vec3(0.05f);
-		_vulkanWindow->updateCamera();
+		_renderer->vulkanCamera.cameraPosition += glm::vec3(0.05f);
+		_renderer->updateCamera();
 		KEYS [KEY_DOWN] = false;
 	}
 }
@@ -100,8 +95,12 @@ const uint32_t Window::GetHeight() const {
 	return _sizeY;
 }
 
-VulkanWindow* Window::GetVulkanWindow() const {
-	return _vulkanWindow;
+const HWND Window::GetHWND() const {
+	return _win32Window;
+}
+
+const HINSTANCE Window::GetWindowHINSTANCE() const {
+	return _win32Instance;
 }
 
 void Window::initOSWindow() {

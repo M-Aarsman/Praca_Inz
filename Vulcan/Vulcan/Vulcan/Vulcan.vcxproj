@@ -147,7 +147,6 @@
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Shared.cpp" />
     <ClCompile Include="VulkanRenderer.cpp" />
-    <ClCompile Include="VulkanWindow.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -155,7 +154,6 @@
     <ClInclude Include="Shaders.h" />
     <ClInclude Include="Shared.h" />
     <ClInclude Include="VulkanRenderer.h" />
-    <ClInclude Include="VulkanWindow.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

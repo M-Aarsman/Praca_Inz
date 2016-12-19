@@ -16,7 +16,8 @@ public:
 	bool isOpened();
 	const uint32_t GetWidth() const;
 	const uint32_t GetHeight() const;
-	VulkanWindow* GetVulkanWindow() const;
+	const HWND GetHWND() const;
+	const HINSTANCE GetWindowHINSTANCE() const;
 
 private:
 	void initOSWindow();
@@ -34,8 +35,7 @@ private:
 	const char* _winTitle;
 
 	VkSurfaceKHR _surface = VK_NULL_HANDLE;
-	
-	VulkanWindow* _vulkanWindow = nullptr;
+
 	VulkanRenderer* _renderer = nullptr;
 };
 

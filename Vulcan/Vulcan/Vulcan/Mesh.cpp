@@ -1,6 +1,5 @@
 #include "Mesh.h"
 #include "VulkanRenderer.h"
-#include "VulkanWindow.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
