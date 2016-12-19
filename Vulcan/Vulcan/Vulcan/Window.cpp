@@ -71,13 +71,13 @@ void Window::UpdateWindow() {
 	}
 
 	if(KEYS [KEY_UP] == true) {
-		_renderer->vulkanCamera.cameraPosition-= glm::vec3(0.05f);
+		_renderer->vulkanCamera.cameraPosition-= glm::vec3(0.1f);
 		_renderer->updateCamera();
 		KEYS [KEY_UP] = false;
 	}
 
 	if(KEYS [KEY_DOWN] == true) {
-		_renderer->vulkanCamera.cameraPosition += glm::vec3(0.05f);
+		_renderer->vulkanCamera.cameraPosition += glm::vec3(0.1f);
 		_renderer->updateCamera();
 		KEYS [KEY_DOWN] = false;
 	}

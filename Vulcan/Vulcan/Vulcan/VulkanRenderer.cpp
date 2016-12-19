@@ -71,17 +71,19 @@ VulkanRenderer::VulkanRenderer(unsigned int meshNum)
 		fov *= static_cast<float>(_winHeight) / static_cast<float>(_winWidth);
 	}
 
-	_projection = glm::perspective(fov, static_cast<float>(_winWidth) / static_cast<float>(_winHeight), 0.1f, 100.0f);
+	MVP.projection = glm::perspective(fov, static_cast<float>(_winWidth) / static_cast<float>(_winHeight), 0.1f, 100.0f);
 
 	vulkanCamera.cameraPosition = glm::vec3(5, 3, 10);
 
-	_view = glm::lookAt(vulkanCamera.cameraPosition,//Camera Position,
+	MVP.view = glm::lookAt(vulkanCamera.cameraPosition,//Camera Position,
 						glm::vec3(0, 0, 0), // look at
 						glm::vec3(0, -1, 0) /*head up */);
-	_model = glm::mat4(1.0f);
+	MVP.model = glm::mat4(1.0f);
+
+	//MVP.jed = glm::mat4(1.0f);
 
 	// Vulkan clip space has inverted Y and half Z.
-	_clip = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
+	MVP.clip = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
 					  0.0f, -1.0f, 0.0f, 0.0f,
 					  0.0f, 0.0f, 0.5f, 0.0f,
 					  0.0f, 0.0f, 0.5f, 1.0f);
@@ -123,9 +125,9 @@ VulkanRenderer::VulkanRenderer(unsigned int meshNum)
 	uint8_t *pData = (uint8_t*) malloc(_meshNum * _uniformBufferSize);
 	ErrorCheck(vkMapMemory(_deviceHandler, _uniformBufferMemory, 0, _uniformMemoryRequirements.size, 0, (void **) &pData));
 	for(int i = 0; i < _meshNum; i++) {
-		glm::mat4x4 model = glm::translate(_model, glm::vec3(_translateValues [i].X, _translateValues [i].Y, _translateValues [i].Z));
-		_mvp = _clip * _projection * _view * model;
-		memcpy(pData + i * _uniformBufferSize, &_mvp, sizeof(_mvp));
+		glm::mat4x4 model = glm::translate(glm::mat4(1.0f), glm::vec3(_translateValues [i].X, _translateValues [i].Y, _translateValues [i].Z));
+		MVP.model = model;
+		memcpy(pData + i * _uniformBufferSize, &MVP, sizeof(MVP));
 	}
 	vkUnmapMemory(_deviceHandler, _uniformBufferMemory);
 }
@@ -843,7 +845,7 @@ void VulkanRenderer::Draw(uint32_t &imageKHRindex, VkSemaphore* semaphore) {
 
 void VulkanRenderer::initUniformBuffer() {
 	//Create uniform buffer
-	_uniformBufferSize = (sizeof(_mvp) + 255) & ~255;
+	_uniformBufferSize = (sizeof(MVP) + 255) & ~255;
 
 	VkBufferCreateInfo uniformBufferCreateInfo {};
 	uniformBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -886,7 +888,7 @@ void VulkanRenderer::deinitUniformBuffer() {
 }
 
 void VulkanRenderer::updateCamera() {
-	_view = glm::lookAt(vulkanCamera.cameraPosition,//Camera Position,
+	MVP.view = glm::lookAt(vulkanCamera.cameraPosition,//Camera Position,
 						vulkanCamera.lookAt, // look at
 						glm::vec3(0, -1, 0) /*head up */);
 
@@ -902,9 +904,9 @@ void VulkanRenderer::updateCamera() {
 	uint8_t *pData;
 	ErrorCheck(vkMapMemory(_deviceHandler, _uniformBufferMemory, 0, _uniformMemoryRequirements.size, 0, (void **) &pData));
 	for(int i = 0; i < _meshNum; i++) {
-		glm::mat4x4 model = glm::translate(_model, glm::vec3(_translateValues [i].X, _translateValues [i].Y, _translateValues [i].Z));
-		_mvp = _clip * _projection * _view * model;
-		memcpy(pData + i * _uniformBufferSize, &_mvp, sizeof(_mvp));
+		glm::mat4x4 model = glm::translate(glm::mat4(1.0f), glm::vec3(_translateValues [i].X, _translateValues [i].Y, _translateValues [i].Z));
+		MVP.model = model;
+		memcpy(pData + i * _uniformBufferSize, &MVP, sizeof(MVP));
 	}
 
 

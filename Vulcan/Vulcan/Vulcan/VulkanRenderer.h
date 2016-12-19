@@ -28,6 +28,12 @@ struct TranslateData {
 	float Y;
 	float Z;
 };
+struct bufferVals {
+	glm::mat4x4 model;
+	glm::mat4x4  projection;	
+	glm::mat4x4 view;	
+	glm::mat4x4 clip;
+};
 
 class VulkanRenderer
 {
@@ -165,11 +171,12 @@ private:
 
 	VkImageMemoryBarrier prePresentBarrier {};
 
-	glm::mat4 _projection;
-	glm::mat4 _view;
-	glm::mat4 _model;
-	glm::mat4 _clip;
-	glm::mat4 _mvp;
+	//glm::mat4 _projection;
+	//glm::mat4 _view;
+	//glm::mat4 _model;
+	//glm::mat4 _clip;
+	//glm::mat4 _mvp;
+	bufferVals MVP;
 
 	VkViewport _viewport;
 	VkBuffer _uniformDataBuffer = VK_NULL_HANDLE;

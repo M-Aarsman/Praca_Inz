@@ -5,8 +5,11 @@ static const char *vertShaderText =
 "#extension GL_ARB_shading_language_420pack : enable			\n"
 "																\n"
 "layout (std140, binding = 0) uniform bufferVals {				\n"
-"    mat4 mvp;													\n"
-"} myBufferVals;												\n"
+"    mat4 model;												\n"
+"    mat4 projection;											\n"
+"    mat4 view;													\n"
+"    mat4 clip;													\n"
+"} ubo;															\n"
 "																\n"
 "layout (location = 0) in vec4 pos;								\n"
 "layout (location = 1) in vec4 inColor;							\n"
@@ -18,7 +21,7 @@ static const char *vertShaderText =
 "																\n"
 "void main() {													\n"
 "   outColor = inColor;											\n"
-"   gl_Position = myBufferVals.mvp * pos;						\n"
+"   gl_Position = ubo.clip * ubo.projection * ubo.view * ubo.model * pos;	\n"
 "}																\n";
 
 static const char *fragShaderText =
