@@ -3,7 +3,7 @@
 #include "VulkanRenderer.h"
 
 int main() {
-	VulkanRenderer renderer(500); 
+	VulkanRenderer renderer(18000); 
 	VkSemaphore semaphore = VK_NULL_HANDLE;
 	while(renderer.Run()) {
 	}

@@ -33,6 +33,7 @@ struct bufferVals {
 	glm::mat4x4  projection;	
 	glm::mat4x4 view;	
 	glm::mat4x4 clip;
+	glm::mat4x4 rotate;
 };
 
 class VulkanRenderer
@@ -171,11 +172,6 @@ private:
 
 	VkImageMemoryBarrier prePresentBarrier {};
 
-	//glm::mat4 _projection;
-	//glm::mat4 _view;
-	//glm::mat4 _model;
-	//glm::mat4 _clip;
-	//glm::mat4 _mvp;
 	bufferVals MVP;
 
 	VkViewport _viewport;
@@ -226,5 +222,6 @@ private:
 	VkMemoryRequirements _uniformMemoryRequirements;
 	size_t _uniformBufferSize = 0;
 	std::vector<TranslateData> _translateValues;
+	std::vector<glm::mat4x4> _models;
 };
 

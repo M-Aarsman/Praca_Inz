@@ -9,6 +9,7 @@ static const char *vertShaderText =
 "    mat4 projection;											\n"
 "    mat4 view;													\n"
 "    mat4 clip;													\n"
+"    mat4 rotate;												\n"
 "} ubo;															\n"
 "																\n"
 "layout (location = 0) in vec4 pos;								\n"
@@ -21,7 +22,7 @@ static const char *vertShaderText =
 "																\n"
 "void main() {													\n"
 "   outColor = inColor;											\n"
-"   gl_Position = ubo.clip * ubo.projection * ubo.view * ubo.model * pos;	\n"
+"   gl_Position =  ubo.clip *  ubo.projection * ubo.view * ubo.model *ubo.rotate* pos;	\n"
 "}																\n";
 
 static const char *fragShaderText =

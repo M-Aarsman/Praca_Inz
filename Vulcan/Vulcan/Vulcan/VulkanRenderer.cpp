@@ -79,9 +79,7 @@ VulkanRenderer::VulkanRenderer(unsigned int meshNum)
 						glm::vec3(0, 0, 0), // look at
 						glm::vec3(0, -1, 0) /*head up */);
 	MVP.model = glm::mat4(1.0f);
-
-	//MVP.jed = glm::mat4(1.0f);
-
+	MVP.rotate = glm::mat4(1.0f);
 	// Vulkan clip space has inverted Y and half Z.
 	MVP.clip = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
 					  0.0f, -1.0f, 0.0f, 0.0f,
@@ -127,6 +125,7 @@ VulkanRenderer::VulkanRenderer(unsigned int meshNum)
 	for(int i = 0; i < _meshNum; i++) {
 		glm::mat4x4 model = glm::translate(glm::mat4(1.0f), glm::vec3(_translateValues [i].X, _translateValues [i].Y, _translateValues [i].Z));
 		MVP.model = model;
+		_models.push_back(model);
 		memcpy(pData + i * _uniformBufferSize, &MVP, sizeof(MVP));
 	}
 	vkUnmapMemory(_deviceHandler, _uniformBufferMemory);
@@ -401,22 +400,22 @@ void VulkanRenderer::ExecuteQueueCommandBuffer() {
 
 bool VulkanRenderer::Run() {
 	InitSemaphore(&_semaphoreA);
-	if(begin == 0)
-		begin = clock();
-
 	if(_window != nullptr) {
 		_window->UpdateWindow();
 
 		auto res = VK_SUCCESS;
-
+		bool rotate = false;
+		
+		if(begin == 0)
+			begin = clock();
+		
+		static float angle = 0.0f;
 		clock_t end = clock();
 
 		if(double(end - begin) / CLOCKS_PER_SEC > 0.05) {
-			//for(int i = 0; i < _meshNum; i++) {
-			//	meshes [i]->RotateZ(3);
-			//}
-
-			//begin = clock();
+			rotate = true;
+			angle += 0.05f;
+			begin = clock();
 		}
 
 		InitRenderPass(_imageKHRindex);
@@ -435,6 +434,18 @@ bool VulkanRenderer::Run() {
 		rect2d.offset.y = 0;
 		vkCmdSetScissor(_commandBuffer, 0, 1, &rect2d);
 
+		if(rotate) {
+			MVP.rotate = glm::rotate(glm::mat4x4(1.0f), angle, glm::vec3(0.0f, 0.0f, 1.0f));
+			uint8_t *pData = (uint8_t*) malloc(_meshNum * _uniformBufferSize);
+			ErrorCheck(vkMapMemory(_deviceHandler, _uniformBufferMemory, 0, _uniformMemoryRequirements.size, 0, (void **) &pData));
+			for(int i = 0; i < _meshNum; i++) {
+				//glm::mat4x4 model = glm::translate(glm::mat4(1.0f), glm::vec3(_translateValues [i].X, _translateValues [i].Y, _translateValues [i].Z));
+				MVP.model = _models[i];
+				memcpy(pData + i * _uniformBufferSize, &MVP, sizeof(MVP));
+			}
+			vkUnmapMemory(_deviceHandler, _uniformBufferMemory);
+
+		}
 
 		for(int i = 0; i < _meshNum; i++) {
 
@@ -904,12 +915,10 @@ void VulkanRenderer::updateCamera() {
 	uint8_t *pData;
 	ErrorCheck(vkMapMemory(_deviceHandler, _uniformBufferMemory, 0, _uniformMemoryRequirements.size, 0, (void **) &pData));
 	for(int i = 0; i < _meshNum; i++) {
-		glm::mat4x4 model = glm::translate(glm::mat4(1.0f), glm::vec3(_translateValues [i].X, _translateValues [i].Y, _translateValues [i].Z));
-		MVP.model = model;
+		//glm::mat4x4 model = glm::translate(glm::mat4(1.0f), glm::vec3(_translateValues [i].X, _translateValues [i].Y, _translateValues [i].Z));
+		MVP.model = _models[i];
 		memcpy(pData + i * _uniformBufferSize, &MVP, sizeof(MVP));
 	}
-
-
 	vkUnmapMemory(_deviceHandler, _uniformBufferMemory);
 }
 
