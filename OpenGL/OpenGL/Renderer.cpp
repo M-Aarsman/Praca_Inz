@@ -83,7 +83,6 @@ void Renderer::init() {
 		"uniform mat4 m_proj_matrix;                                        \n"
 		"uniform mat4 m_rotate;												\n"
 		"uniform mat4 m_translate;											\n"
-		"uniform mat4 m_normalMatrix;										\n																	\n"
 		"																	\n"
 		"uniform vec4 LightPosition;										\n"
 		"uniform vec3 Kd;													\n"
@@ -91,17 +90,13 @@ void Renderer::init() {
 		"                                                                   \n"
 		"void main(void)                                                    \n"
 		"{                                                                  \n"
-		"    gl_Position = m_proj_matrix * m_camera * m_translate * m_rotate * position;	\n"
-		"    vec4 color = position / 2 + vec4(0.5, 0.5, 0.5, 0.0);			\n"
+		"	mat4 model =  m_camera * m_translate * m_rotate	;				\n"
+		"    gl_Position = m_proj_matrix * model * position;	\n"
+		"    vec4 color = position / 4 + vec4(0.5, 0.5, 0.5, 0.0);			\n"
 		"																	\n"
-		"	//Convert normal and position to eye voords						\n"
-		"	vec3 tnorm = normalize(vec3(m_normalMatrix * normal));				\n"
-		"	vec4 eyeCoord = m_camera * m_translate * m_rotate * position;	\n"
-		"	vec3 s = normalize(vec3(LightPosition - eyeCoord));				\n"
 		"																	\n"
-		"	//diffiuse														\n"
-		"	vec3 LightIntesuty = Ld * Kd * max(dot(s,tnorm), 1.0);			\n"
-		"	vs_out.color =  color * vec4(LightIntesuty, 1.0);				\n"
+		"	vs_out.color =  color ;				\n"
+		"	//vs_out.color =  vec4(0.0, 0.0, 0.0, 1.0);						\n"
 		"}                                                                  \n"
 	};
 	//vs_out.color = position * 2.0 + vec4(0.5, 0.5, 0.5, 0.0);
@@ -122,59 +117,7 @@ void Renderer::init() {
 		"}                                                                  \n"
 	};
 
-	/*static const GLfloat vertex_positions [] =
-	{
-		-0.25f,  0.25f, -0.25f,
-		-0.25f, -0.25f, -0.25f,
-		0.25f, -0.25f, -0.25f,
-
-		0.25f, -0.25f, -0.25f,
-		0.25f,  0.25f, -0.25f,
-		-0.25f,  0.25f, -0.25f,
-
-		0.25f, -0.25f, -0.25f,
-		0.25f, -0.25f,  0.25f,
-		0.25f,  0.25f, -0.25f,
-
-		0.25f, -0.25f,  0.25f,
-		0.25f,  0.25f,  0.25f,
-		0.25f,  0.25f, -0.25f,
-
-		0.25f, -0.25f,  0.25f,
-		-0.25f, -0.25f,  0.25f,
-		0.25f,  0.25f,  0.25f,
-
-		-0.25f, -0.25f,  0.25f,
-		-0.25f,  0.25f,  0.25f,
-		0.25f,  0.25f,  0.25f,
-
-		-0.25f, -0.25f,  0.25f,
-		-0.25f, -0.25f, -0.25f,
-		-0.25f,  0.25f,  0.25f,
-
-		-0.25f, -0.25f, -0.25f,
-		-0.25f,  0.25f, -0.25f,
-		-0.25f,  0.25f,  0.25f,
-
-		-0.25f, -0.25f,  0.25f,
-		0.25f, -0.25f,  0.25f,
-		0.25f, -0.25f, -0.25f,
-
-		0.25f, -0.25f, -0.25f,
-		-0.25f, -0.25f, -0.25f,
-		-0.25f, -0.25f,  0.25f,
-
-		-0.25f,  0.25f, -0.25f,
-		0.25f,  0.25f, -0.25f,
-		0.25f,  0.25f,  0.25f,
-
-		0.25f,  0.25f,  0.25f,
-		-0.25f,  0.25f,  0.25f,
-		-0.25f,  0.25f, -0.25f
-
-	};*/
-
-	loadVertices("cube.obj");
+	loadVertices("tedyy6.obj");
 
 	_vertexPerMesh = _vertices.size()/3;
 
@@ -202,9 +145,9 @@ void Renderer::init() {
 	m_roate_location = glGetUniformLocation(m_program, "m_rotate");
 	m_translate_location = glGetUniformLocation(m_program, "m_translate");
 	m_translate_matrix = vmath::translate(0.0f, 0.0f, 0.0f);
-	m_rotate_matrix = vmath::rotate(1.0f, vmath::vec3(0.0f, 0.0f, 1.0f));
+	m_rotate_matrix = vmath::rotate(1.0f, vmath::vec3(0.0f, 1.0f, 0.0f));
 	
-	GLuint vboHandles [2];
+		GLuint vboHandles [2];
 	glGenBuffers(2, vboHandles);
 
 	GLuint positionBufferHandle = vboHandles [0];
@@ -245,19 +188,21 @@ void Renderer::init() {
 
 	m_aspect = (float) m_windowWidth / (float) m_windowHeight;
 	m_proj_matrix = vmath::perspective(50.0f, m_aspect, 0.1f, 1000.0f);
+
+
 	glViewport(0, 0, m_windowWidth, m_windowHeight);
 	glUseProgram(m_program);
 	glUniformMatrix4fv(m_camera_location, 1, GL_FALSE, m_camera_matrix);
 	glUniformMatrix4fv(m_proj_location, 1, GL_FALSE, m_proj_matrix);
 	glUniformMatrix4fv(m_translate_location, 1, GL_FALSE, m_translate_matrix);
 
-	_meshNum = 18001;
+	_meshNum = 50;
 	unsigned int rowNum = (unsigned int) (sqrt(_meshNum));
 	unsigned int meshPerRow = _meshNum / rowNum;
 
 	unsigned int centerIndex = meshPerRow / 2;
 
-	float objectWidth = 4;
+	float objectWidth = 6;
 	float objectHeight = 4;
 
 
@@ -283,12 +228,12 @@ void Renderer::init() {
 	glUniform3fv(LdLocation, 1, vmath::vec3(1.0f, 1.0f, 1.0f));
 
 	GLint LightPositionLocation = glGetUniformLocation(m_program, "LightPosition");
-	glUniformMatrix4fv(LightPositionLocation, 1, GL_FALSE, m_camera_matrix * vmath::vec4(50.0f, 5.0f, 10.0f, 1.0f));
+	glUniformMatrix4fv(LightPositionLocation, 1, GL_FALSE, m_camera_matrix *  vmath::vec4(0.0f, 0.0f, 0.0f, 20.0f));
 
 }
 
 void Renderer::render(double currentTime) {
-	static const GLfloat red [] = { 1.0f, 0.0f, 0.0f, 1.0f };
+	static const GLfloat red [] = { 0.7f, 0.7f, 0.7f, 1.0f };
 	static const GLfloat one = 1.0f;
 	glClearBufferfv(GL_COLOR, 0, red);
 	glClearBufferfv(GL_DEPTH, 0, &one);
@@ -300,17 +245,17 @@ void Renderer::render(double currentTime) {
 
 	static int angle = 0;
 	if(double(end - _begin) / CLOCKS_PER_SEC > 0.03) {
-		angle = (angle + 3) % 360;
+		angle = (angle + 2) % 360;
 		_begin = end;
 
-		m_rotate_matrix = vmath::rotate((float) angle, vmath::vec3(0.0f, 0.0f, 1.0f));
+		m_rotate_matrix = vmath::rotate((float) angle, vmath::vec3(0.0f, 1.0f, 0.0f));
 		glUniformMatrix4fv(m_roate_location, 1, GL_FALSE, m_rotate_matrix);
 	}
 
 	for(int i = 0; i < _meshNum; i++) {
 		m_translate_matrix = vmath::translate(_traslateValueX [i], _traslateValueY [i], 0.0f);
 		glUniformMatrix4fv(m_translate_location, 1, GL_FALSE, m_translate_matrix);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_TRIANGLES, 0, _vertexPerMesh);
 	}
 
 	UpdateCamera();
@@ -358,182 +303,59 @@ void Renderer::loadVertices(char * fileName) {
 
 	fseek(fp, 0, SEEK_SET);
 
-	std::vector<float> vertices;
-	std::vector<float> normals;
-	std::vector<int> faceVectors;
-	std::vector<float> faceNormals;
+	struct vertex {
+		float x;
+		float y;
+		float z;
+	};
 
-	char c;
-	bool comment = false;
-	bool face = false;
-	bool vertex = false;
-	bool normal = false;
+	std::vector<vertex> vertices(0);
+	std::vector<vertex> normals(0);
+	std::vector<int> faceVectors(0);
+	std::vector<float> faceNormals(0);
 
-	char buffer [32] = { 0 };
+	char lineHeader [256] = { 0 };
 
-	uint8_t valueConuter = 0;
-	uint8_t charCounter = 0;
-
-	float value [6] = { 0 };
-
-	while((c = getc(fp)) != EOF) {
-		if(c == '#') {
-			comment = true;
-			continue;
+	while(true) {
+		int res = fscanf(fp, "%s", lineHeader);
+		if(res == EOF) {
+			break; // EOF = End Of File. Quit the loop.
 		}
 
-		if(c == '\n') {
-			if(!face && !vertex && !normal) {
-				comment = false;
-				continue;
-			}
+		if(!strcmp(lineHeader, "v")) {
+			vertex tmp;
+			fscanf(fp, "%f %f %f\n", &tmp.x, &tmp.y, &tmp.z);
+			vertices.push_back(tmp);
+		} else if(!strcmp(lineHeader, "vn")) {
+			vertex tmp;
+			fscanf(fp, "%f %f %f\n", &tmp.x, &tmp.y, &tmp.z);
+			normals.push_back(tmp);
+		} else if(!strcmp(lineHeader, "f")) {
+			int xn, yn, zn;
+			int xv, yv, zv;
 
-			if(buffer [0] != '\0') {
-				if(face) {
-					if(valueConuter > 4) {
-						assert(0 && "Invalid data in file");
-					}
-				} else if(valueConuter > 2) {
-					assert(0 && "Invalid data in file");
-				}
-
-				if(!face) {
-					value [valueConuter] = atof(buffer);
-					valueConuter++;
-				} else {
-					int values [2] = { 0, 0 };
-					getValuesFromFaceBuffer(buffer, values);
-					value [valueConuter] = values [0];
-					valueConuter++;
-					value [valueConuter] = values [1];
-					valueConuter++;
-
-				}
-
-				//clear buffer
-				for(int i = 0; i < 32; i++) {
-					buffer [i] = '\0';
-				}
-
-				charCounter = 0;
-			}
-
-			if(!face) {
-				if(valueConuter != 3) { // too much or less than shuld be 
-					assert(0 && "Invalid data in file");
-				}
-			} else {
-				if(valueConuter != 6) { // too much or less than shuld be 
-					assert(0 && "Invalid data in file");
-				}
-			}
-
-			if(face) {
-				for(int i = 0; i < 6; i+=2) {
-					faceVectors.push_back(value [i]);
-					faceNormals.push_back(value [i + 1]);
-				}
-			} else if(vertex) {
-				for(int i = 0; i < 3; i++) {
-					vertices.push_back(value [i]);
-				}
-			} else if(normal) {
-				for(int i = 0; i < 3; i++) {
-					normals.push_back(value [i]);
-				}
-			}
-
-			comment = false;
-			face = false;
-			vertex = false;
-			normal = false;
-			valueConuter = 0;
-
-			continue;
-		}
-
-		if(comment) {
-			continue;
-		}
-
-		if(c == 'v') {
-			vertex = true;
-			comment = false;
-			face = false;
-			normal = false;
-			continue;
-		}
-
-		if(c == 'n' && vertex) {
-			comment = false;
-			face = false;
-			vertex = false;
-			normal = true;
-			continue;
-		}
-
-		if(c == 'f') {
-			comment = false;
-			face = true;
-			vertex = false;
-			normal = false;
-			continue;
-		}
-
-		if(c == ' ' || c == '\t') {
-			//flush value
-			if(buffer [0] == '\0') {// smotething wrong meybe 2 separators?
-				continue;
-			}
+			fscanf(fp, "%d//%d %d//%d %d//%d ", &xv, &xn, &yv, &yn, &zv, &zn);
 			
-			if(!face && !normal && !vertex) {
-				continue; //usuported type
-			}
+			faceVectors.push_back(xv);
+			faceVectors.push_back(yv);
+			faceVectors.push_back(zv);
 
-			if(face) {
-				if(valueConuter > 4);
-			} else if(valueConuter > 2) {
-				assert(0 && "Invalid data in file");
-			}
-
-			if(!face) {
-				value [valueConuter] = atof(buffer);
-				valueConuter++;
-			} else {
-				int values [2] = { 0, 0 };
-				getValuesFromFaceBuffer(buffer, values);
-				value [valueConuter] = values [0];
-				valueConuter++;
-				value [valueConuter] = values [1];
-				valueConuter++;
-
-			}
-
-			//clear buffer
-			for(int i = 0; i < 32; i++) {
-				buffer [i] = '\0';
-			}
-
-			charCounter = 0;
-			continue;
+			faceNormals.push_back(xn);
+			faceNormals.push_back(yn);
+			faceNormals.push_back(zn);
 		}
-
-		buffer [charCounter] = c;
-		charCounter++;
 	}
 
 	for(int i = 0; i < faceVectors.size(); i++) {
-		int index = (faceVectors [i] - 1) * 3;
-		_vertices.push_back(vertices [index]);
-		_vertices.push_back(vertices [index + 1]);
-		_vertices.push_back(vertices [index+ 2]);
+		_vertices.push_back(vertices [faceVectors [i] -1].x);
+		_vertices.push_back(vertices [faceVectors [i] -1].y);
+		_vertices.push_back(vertices [faceVectors [i] -1].z);
 	}
 
 	for(int i = 0; i < faceNormals.size(); i++) {
-		int index = (faceNormals [i] - 1) * 3;
-		_normals.push_back(vertices [index]);
-		_normals.push_back(vertices [index + 1]);
-		_normals.push_back(vertices [index + 2]);
+		_normals.push_back(normals [faceNormals [i] - 1].x);
+		_normals.push_back(normals [faceNormals [i] - 1].y);
+		_normals.push_back(normals [faceNormals [i] - 1].z);
 	}
 }
 
@@ -560,11 +382,11 @@ void Renderer::UpdateCamera() {
 	bool changed = false;
 
 	if(KEYS [KEY_UP]) {
-		_cameraPosZ += 0.1;
+		_cameraPosZ += 0.5;
 		changed = true;
 	} 
 	if(KEYS [KEY_DOWN]) {
-		_cameraPosZ -= 0.1;
+		_cameraPosZ -= 0.5;
 		changed = true;
 	}
 
@@ -574,6 +396,8 @@ void Renderer::UpdateCamera() {
 										vmath::vec3(0.0f, 1.0f, 0.0f));
 
 		glUniformMatrix4fv(m_camera_location, 1, GL_FALSE, m_camera_matrix);
+		GLint LightPositionLocation = glGetUniformLocation(m_program, "LightPosition");
+		glUniformMatrix4fv(LightPositionLocation, 1, GL_FALSE, m_camera_matrix *vmath::vec4(0.0f, 0.0f, 0.0f, 20.0f));
 	}
 }
 /*void MyTriangle::onResize(int w, int h) {}

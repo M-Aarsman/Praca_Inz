@@ -42,6 +42,7 @@ private:
 	vmath::mat4 m_camera_matrix;
 	vmath::mat4 m_rotate_matrix;
 	vmath::mat4 m_translate_matrix;
+	vmath::mat4 m_norm_matrix;
 
 	float m_aspect;
 
