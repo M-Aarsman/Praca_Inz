@@ -357,7 +357,7 @@ void Dx12Renderer::LoadAssets() {
 		exit(-1);
 	}
 
-	loadVertices("cubeVertices.txt");
+	loadVertices("tedyy.obj");
 	
 	const UINT vertexBufferSize = _meshesVertices.size() * sizeof(Vertex);
 
@@ -683,12 +683,12 @@ void Dx12Renderer::LoadAssets() {
 		//TODO: !!! calculate object width + object height
 
 		int objectWidth = 4;
-		int objectHeight = 4;
+		int objectHeight = 6;
 
 		//create Meshes
 
 		for(int i = 0; i <= rowNum; i++) {  // +/- flip
-			for(int j = 0; j <= meshPerRow; j++) {
+			for(int j = 0; j < meshPerRow; j++) {
 
 				int currentIndex = i*meshPerRow + j;
 				if(currentIndex >= _meshNum) {
@@ -759,7 +759,7 @@ void Dx12Renderer::PopulateCommandList() {
 			angle += 0.1;
 		}
 
-		const float clearColor [] = { 0.0f, 0.2f, 0.0f, 1.0f }; _frameIndex = _swapChain->GetCurrentBackBufferIndex();
+		const float clearColor [] = { 0.7f, 0.7f, 0.7f, 1.0f }; _frameIndex = _swapChain->GetCurrentBackBufferIndex();
 
 		// Set the graphics root signature and descriptor heaps to be used by this frame.
 		_commandList->SetGraphicsRootSignature(_rootSignature);
@@ -806,7 +806,7 @@ void Dx12Renderer::PopulateCommandList() {
 			CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(_cbvHeap->GetGPUDescriptorHandleForHeapStart(),  i, _cbvDescriptorSize);
 			_commandList->SetGraphicsRootDescriptorTable(0, gpuHandle);
 			if(rotate) {
-				XMStoreFloat4x4(&_constantBufferData.rotation, XMMatrixRotationX(angle));
+				XMStoreFloat4x4(&_constantBufferData.rotation, XMMatrixRotationY(angle));
 				XMStoreFloat4x4(&_constantBufferData.model, XMMatrixTranspose(XMMatrixTranslation(0.0f, _translateValues [i].X, _translateValues [i].Y)));
 
 				UINT8* destination = _mappedConstantBuffer + i * c_alignedConstantBufferSize;
@@ -881,202 +881,29 @@ void Dx12Renderer::loadVertices(char* fileName) {
 
 	fseek(fp, 0, SEEK_SET);
 
-	char c;
-	bool comment = false;
-	bool face = false;
-	bool vertex = false;
-	bool color = false;
-
-
-	char buffer [32] = { 0 };
-
 	Vertex currentVertex;
 
-	uint8_t valueConuter = 0;
-	uint8_t charCounter = 0;
 
-	float value [4] = { 0 };
+	char lineHeader [256] = { 0 };
 
-	while((c = getc(fp)) != EOF) {
-		if(c == '#') {
-			comment = true;
-			continue;
+	while(true) {
+		int res = fscanf(fp, "%s", lineHeader);
+		if(res == EOF) {
+			break; // EOF = End Of File. Quit the loop.
 		}
 
-		if(c == '\n') {
-			if(!face && !vertex && !color) {
-				comment = false;
-				continue;
-			}
-
-			if(buffer [0] != '\0') {
-				if(!color) {
-					if(valueConuter > 2) {
-						assert(0 && "Invalid data in file");
-					}
-				} else {
-					if(valueConuter > 3) {
-						assert(0 && "Invalid data in file");
-					}
-				}
-
-				value [valueConuter] = atof(buffer);
-				valueConuter++;
-
-				//clear buffer
-				for(int i = 0; i < 32; i++) {
-					buffer [i] = '\0';
-				}
-
-				charCounter = 0;
-			}
-			if(!color) {
-				if(valueConuter != 3) { // too much or less than shuld be 
-					assert(0 && "Invalid data in file");
-				}
-			} else {
-				if(valueConuter != 4) { // too much or less than shuld be 
-					assert(0 && "Invalid data in file");
-				}
-			}
-
-			if(color) {
-				if(!vertex) {
-					assert(0 && "Invalid data in file, color without vertex");
-				}
-
-				currentVertex.color = { value [0], value [1], value [2], value[3] };
-				_meshesVertices.push_back(currentVertex);
-
-			} else if(face) {
-				_cubeIndices.push_back((unsigned short) value [0]);
-				_cubeIndices.push_back((unsigned short) value [1]);
-				_cubeIndices.push_back((unsigned short) value [2]);
-			}
-
-			comment = false;
-			face = false;
-			vertex = false;
-			color = false;
-			valueConuter = 0;
-			continue;
-		}
-
-		if(comment) {
-			continue;
-		}
-
-		if(c == 'v') {
-			comment = false;
-			face = false;
-			vertex = true;
-			color = false;
-			continue;
-		}
-
-		if(c == 'c') {
-			comment = false;
-			face = false;
-			color = true;
-
-			if(valueConuter != 3) { // too much or less than shuld be 
-				assert(0 && "Invalid data in file");
-			}
-
-			currentVertex.position = { value [0], value [1], value [2] };
-			valueConuter = 0;
-
-			continue;
-		}
-
-		if(c == 'f') {
-			comment = false;
-			face = true;
-			vertex = false;
-			color = false;
-			continue;
-		}
-
-		if(c == ' ' || c == '\t') {
-			//flush value
-			if(buffer [0] == '\0') {// smotething wrong meybe 2 separators?
-				continue;
-			}
-
-			if(!color) {
-				if(valueConuter > 2) {
-					assert(0 && "Invalid data in file");
-				}
-			}
-			else {
-				if(valueConuter > 3) {
-					assert(0 && "Invalid data in file");
-				}
-			}
-
-			value [valueConuter] = atof(buffer);
-			valueConuter++;
-
-			//clear buffer
-			for(int i = 0; i < 32; i++) {
-				buffer [i] = '\0';
-			}
-
-			charCounter = 0;
-			continue;
-		}
-
-		buffer [charCounter] = c;
-		charCounter++;
-	}
-
-	if(valueConuter != 0) {
-		if(buffer [0] != '\0') {
-			if(!color) {
-				if(valueConuter > 2) {
-					assert(0 && "Invalid data in file");
-				}
-			}
-			else {
-				if(valueConuter > 3) {
-					assert(0 && "Invalid data in file");
-				}
-			}
-
-			value [valueConuter] = atof(buffer);
-			valueConuter++;
-
-			//clear buffer
-			for(int i = 0; i < 32; i++) {
-				buffer [i] = '\0';
-			}
-
-			charCounter = 0;
-		}
-		if(!color) {
-			if(valueConuter != 3) { // too much or less than shuld be 
-				assert(0 && "Invalid data in file");
-			}
-		}
-		else {
-			if(valueConuter != 4) { // too much or less than shuld be 
-				assert(0 && "Invalid data in file");
-			}
-		}
-
-		if(color) {
-			if(!vertex) {
-				assert(0 && "Invalid data in file, color without vertex");
-			}
-
-			currentVertex.color = { value [0], value [1], value [2], value [3] };
+		if(!strcmp(lineHeader, "v")) {
+			fscanf(fp, "%f %f %f\n", &currentVertex.position.x, &currentVertex.position.y, &currentVertex.position.z);
 			_meshesVertices.push_back(currentVertex);
+		} else if(!strcmp(lineHeader, "f")) {
+			int xn, yn, zn;
+			int xv, yv, zv;
 
-		}
-		else if(face) {
-			_cubeIndices.push_back((unsigned short) value [0]);
-			_cubeIndices.push_back((unsigned short) value [1]);
-			_cubeIndices.push_back((unsigned short) value [2]);
+			fscanf(fp, "%d//%d %d//%d %d//%d ", &xv, &xn, &yv, &yn, &zv, &zn);
+
+			_cubeIndices.push_back(xv -1);
+			_cubeIndices.push_back(yv -1);
+			_cubeIndices.push_back(zv -1);
 		}
 	}
 }

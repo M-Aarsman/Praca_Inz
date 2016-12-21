@@ -117,7 +117,7 @@ void Renderer::init() {
 		"}                                                                  \n"
 	};
 
-	loadVertices("tedyy6.obj");
+	loadVertices("tedyy.obj");
 
 	_vertexPerMesh = _vertices.size()/3;
 
