@@ -21,7 +21,7 @@ static const char *vertShaderText =
 "};																\n"
 "																\n"
 "void main() {													\n"
-"   outColor = inColor;											\n"
+"   outColor = pos /4 + vec4(0.5, 0.5, 0.5, 0.0);											\n"
 "   gl_Position =  ubo.clip *  ubo.projection * ubo.view * ubo.model *ubo.rotate* pos;	\n"
 "}																\n";
 

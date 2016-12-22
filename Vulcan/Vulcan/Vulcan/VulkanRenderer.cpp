@@ -42,7 +42,7 @@ VulkanRenderer::VulkanRenderer(unsigned int meshNum)
 
 	//TODO: should take it in some other place than constructor
 
-	loadVertx("cubeVertex.txt");
+	loadVertx("tedyy.obj");
 	meshes.push_back(new Mesh(&vertices, 0, vertices.size()));
 	int begin = vertices.size();
 	_vertexPerMesh = vertices.size();
@@ -96,8 +96,8 @@ VulkanRenderer::VulkanRenderer(unsigned int meshNum)
 	unsigned int centerIndex = meshPerRow / 2; // the cube index (i,j) which will be around 0,0
 
 											   //TODO: !!! calculate object width + object heigh
-	int objectWidth = 3;
-	int objectHeight = 3;
+	int objectWidth = 6;
+	int objectHeight = 4;
 
 	//create Meshes
 
@@ -435,7 +435,7 @@ bool VulkanRenderer::Run() {
 		vkCmdSetScissor(_commandBuffer, 0, 1, &rect2d);
 
 		if(rotate) {
-			MVP.rotate = glm::rotate(glm::mat4x4(1.0f), angle, glm::vec3(0.0f, 0.0f, 1.0f));
+			MVP.rotate = glm::rotate(glm::mat4x4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
 			uint8_t *pData = (uint8_t*) malloc(_meshNum * _uniformBufferSize);
 			ErrorCheck(vkMapMemory(_deviceHandler, _uniformBufferMemory, 0, _uniformMemoryRequirements.size, 0, (void **) &pData));
 			for(int i = 0; i < _meshNum; i++) {
@@ -568,153 +568,61 @@ void VulkanRenderer::set_image_layout(VkImage& image, VkImageAspectFlags aspectM
 	vkCmdPipelineBarrier(_commandBuffer, src_stages, dest_stages, 0, 0, NULL, 0, NULL, 1, &imageMemoryBarier);
 }
 
+
 void VulkanRenderer::loadVertx(char * fileName) {
-	FILE* fp;
+		FILE* fp;
 
-	if(!(fp = fopen(fileName, "r"))) {
-		assert(0 && "Can not open file!");
-	}
-
-	int size = 0;
-	fseek(fp, 0, SEEK_END);
-	size = ftell(fp);
-
-	if(!size) {
-		assert(0 && "file is empty!");
-	}
-
-	fseek(fp, 0, SEEK_SET);
-
-	char c;
-	bool position = true;
-	bool comment = false;
-
-	float value [4] = { 0 };
-	char buffer [32] = { 0 };
-
-	Vertex current;
-
-	uint8_t valueConuter = 0;
-	uint8_t charCounter = 0;
-
-	//read file
-
-	while((c = getc(fp)) != EOF) {
-		if(c == '#') {
-			comment = true;
-			continue;
+		if(!(fp = fopen(fileName, "r"))) {
+			assert(0 && "Can not open file!");
 		}
 
-		if(c == '\n') {
-			if(comment) {
-				comment = false;
-				continue;
-			}
+		int size = 0;
+		fseek(fp, 0, SEEK_END);
+		size = ftell(fp);
 
-			if(!position) {
-				position = true;
-
-				//flush value
-				if(buffer [0] == '\0') {// more than 1 space
-					continue;
-				}
-
-				if(valueConuter > 4) {
-					assert(0 && "Invalid data in file");
-				}
-
-				value [valueConuter] = atof(buffer);
-				valueConuter++;
-
-				//clear buffer
-				for(int i = 0; i < 32; i++) {
-					buffer [i] = '\0';
-				}
-
-				charCounter = 0;
-
-				if(valueConuter != 4) { // too much or less than shuld be 
-					assert(0 && "Invalid data in file");
-				}
-				valueConuter = 0;
-				//flush color
-				current.color = glm::vec4(value [0], value [1], value [2], value [3]);
-
-				//flush vertex
-				vertices.push_back(current);
-
-				continue;
-			}
-
-			assert(0 && "Invalid data in file");
+		if(!size) {
+			assert(0 && "file is empty!");
 		}
 
-		if(comment) {
-			continue;
+		fseek(fp, 0, SEEK_SET);
+
+		std::vector<Vertex> Tvertices(0);
+		std::vector<int> faceVectors(0);
+
+		char lineHeader [256] = { 0 };
+
+		//read file
+
+		while(true) {
+			int res = fscanf(fp, "%s", lineHeader);
+			if(res == EOF) {
+				break; // EOF = End Of File. Quit the loop.
+			}
+
+			if(!strcmp(lineHeader, "v")) {
+				Vertex tmp;
+				fscanf(fp, "%f %f %f\n", &tmp.position.x, &tmp.position.y, &tmp.position.z);
+				tmp.position.w = 1.0f;
+				tmp.color.x = 1.0f;
+				tmp.color.y = 1.0f;
+				tmp.color.z = 1.0f;
+				tmp.color.w = 1.0f;
+				Tvertices.push_back(tmp);
+			} else if(!strcmp(lineHeader, "f")) {
+				int xn, yn, zn;
+				int xv, yv, zv;
+
+				fscanf(fp, "%d//%d %d//%d %d//%d ", &xv, &xn, &yv, &yn, &zv, &zn);
+
+				faceVectors.push_back(xv);
+				faceVectors.push_back(yv);
+				faceVectors.push_back(zv);
+			}
 		}
 
-		if(c == ';') {
-			position = false;
-
-			//flush value
-			if(buffer [0] == '\0') {// more than 1 space
-				continue;
-			}
-
-			if(valueConuter > 4) {
-				assert(0 && "Invalid data in file");
-			}
-
-			value [valueConuter] = atof(buffer);
-			valueConuter++;
-
-			//clear buffer
-			for(int i = 0; i < 32; i++) {
-				buffer [i] = '\0';
-			}
-
-			charCounter = 0;
-
-			if(valueConuter != 4) { // too much or less than shuld be 
-				assert(0 && "Invalid data in file");
-			}
-
-			valueConuter = 0;
-			//flush postion
-			current.position = glm::vec4(value [0], value [1], value [2], value [3]);
-
-			continue;
+		for(int i = 0; i < faceVectors.size(); i++) {
+			vertices.push_back(Tvertices [faceVectors [i] - 1]);
 		}
-
-		if(c == ' ' || c == '\t') {
-			continue;
-		}
-
-		if(c == ',') {
-			//flush value
-			if(buffer [0] == '\0') {// smotething wrong meybe 2 separators?
-				assert(0 && "Invalid data in file");
-			}
-
-			if(valueConuter > 4) {
-				assert(0 && "Invalid data in file");
-			}
-
-			value [valueConuter] = atof(buffer);
-			valueConuter++;
-
-			//clear buffer
-			for(int i = 0; i < 32; i++) {
-				buffer [i] = '\0';
-			}
-
-			charCounter = 0;
-			continue;
-		}
-
-		buffer [charCounter] = c;
-		charCounter++;
-	}
 }
 
 void VulkanRenderer::InitSemaphore(VkSemaphore* semaphore) {
